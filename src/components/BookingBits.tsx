@@ -52,17 +52,16 @@ export function Captures({ b, label = "모바일 탑승권 캡처 넣기" }: { b
           <span>{busy ? "올리는 중…" : label}</span>
         </div>
       ) : (
-        <div className="bp-list">
+        <div className="wphotos" style={{ marginTop: 0 }}>
           {list.map((u, i) => (
-            <div key={u} className="bp-i" onClick={() => setBig(i)}>
-              <div className="bp-th" style={{ overflow: "hidden" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
+            <div key={u} onClick={() => setBig(i)}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="im" src={u} alt="" />
             </div>
           ))}
-          <div className="bp-more" onClick={() => ref.current?.click()}>
+          <div className="add" onClick={() => ref.current?.click()}>
             <Ic n={busy ? "clock-3" : "plus"} />
+            <span>{busy ? "올리는 중" : "추가"}</span>
           </div>
         </div>
       )}
