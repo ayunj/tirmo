@@ -1,26 +1,107 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* 트리모 색: 차콜 + 스카이 블루. 바탕은 회색, 면은 흰색 */
+@theme {
+  --color-ink: #191f28;
+  --color-ink2: #333d4b;
+  --color-sub: #8b95a1;
+  --color-sub2: #b0b8c1;
+  --color-bg: #f2f4f6;
+  --color-line: #e5e8eb;
+  --color-char: #4b4e56;
+  --color-sky: #4da3ff;
+  --color-sky-d: #2b7fe0;
+  --color-sky-s: #eaf4ff;
+  --color-red: #e5574a;
+  --color-green: #3e9a6a;
+  --font-sans: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* 휴대폰 폭으로 가운데 */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  position: relative;
+}
+
+@layer components {
+  .hd {
+    @apply sticky top-0 z-20 flex items-center gap-2 bg-white px-4 pb-3 pt-3;
+  }
+  .hd h1 {
+    @apply flex-1 text-[21px] font-bold tracking-tight;
+  }
+  .ib {
+    @apply grid h-9 w-9 place-items-center rounded-full text-ink2;
+  }
+  .sec {
+    @apply mb-2.5 bg-white px-5 py-5;
+  }
+  .card {
+    @apply rounded-[20px] bg-white;
+  }
+  .t2 {
+    @apply text-lg font-bold tracking-tight;
+  }
+  .s13 {
+    @apply text-[13px] text-sub;
+  }
+  .flab {
+    @apply mb-2 mt-6 block text-[13.5px] font-bold;
+  }
+  .inp {
+    @apply w-full rounded-[14px] border-[1.5px] border-line bg-white px-4 py-3.5 text-[15px] outline-none focus:border-sky;
+  }
+  .chip {
+    @apply cursor-pointer select-none rounded-full border border-line bg-white px-3.5 py-2 text-[13.5px] font-semibold text-ink2;
+  }
+  .chip.on {
+    @apply border-char bg-char text-white;
+  }
+  .btn {
+    @apply block w-full cursor-pointer rounded-[14px] bg-char py-4 text-center text-base font-bold text-white disabled:opacity-40;
+  }
+  .btn-sub {
+    @apply block w-full cursor-pointer rounded-[14px] border border-line bg-white py-4 text-center text-base font-bold text-ink2;
+  }
+  .addline {
+    @apply flex items-center justify-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-[#d3d8de] py-3.5 text-sm font-semibold text-[#7a808a];
+  }
+  .dellink {
+    @apply flex items-center justify-center gap-1.5 py-5 text-sm font-semibold text-red;
+  }
+  .tabs {
+    @apply flex gap-5 border-b border-line bg-white px-5;
+  }
+  .tabs a,
+  .tabs button {
+    @apply py-2.5 text-[15px] font-semibold text-sub;
+  }
+  .tabs .on {
+    @apply text-ink shadow-[inset_0_-2.5px_0_var(--color-ink)];
+  }
+  .pill {
+    @apply inline-flex h-[26px] items-center rounded-full px-3 text-[12.5px] font-bold text-white;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 국기: 네모 */
+.flag {
+  display: inline-block;
+  width: 20px;
+  height: 15px;
+  border-radius: 3px;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  flex: none;
 }
