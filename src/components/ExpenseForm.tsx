@@ -9,6 +9,7 @@ import { removePhotos } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
 import SaveBar from "@/components/ui/SaveBar";
+import FitInput from "@/components/ui/FitInput";
 import Ic, { type IcName } from "@/components/Ic";
 import DatePick from "@/components/ui/DatePick";
 import PhotoField from "@/components/ui/PhotoField";
@@ -145,13 +146,13 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
             </div>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", marginTop: 10 }}>
               <b style={{ marginTop: 0 }}>{s}</b>
-              <input
+              <FitInput
                 inputMode="decimal"
                 autoFocus={!edit}
                 value={amount ? Number(amount.replace(/,/g, "")).toLocaleString("ko-KR") + (amount.endsWith(".") ? "." : "") : ""}
                 onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
                 placeholder="0"
-                style={{ width: `${Math.max(1, (amount ? Number(amount).toLocaleString().length : 1)) + 0.5}ch`, border: 0, outline: 0, background: "none", fontSize: 44, fontWeight: 700, letterSpacing: "-1.5px", fontFamily: "inherit", color: "var(--ink)", textAlign: "left", padding: 0 }}
+                style={{ border: 0, outline: 0, background: "none", fontSize: 44, fontWeight: 700, letterSpacing: "-1.5px", fontFamily: "inherit", color: "var(--ink)", textAlign: "left", padding: 0 }}
               />
             </div>
             {cur !== "KRW" && <span className="sub">≈ {Math.round(toKrw(amt, cur, trip)).toLocaleString()}원</span>}

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { sym } from "@/lib/money";
 import { md, today } from "@/lib/format";
 import { askDel, toast } from "@/lib/ui";
+import FitInput from "@/components/ui/FitInput";
 import Ic from "@/components/Ic";
 import Sheet from "@/components/ui/Sheet";
 import DatePick from "@/components/ui/DatePick";
@@ -48,7 +49,7 @@ export function TopUpButton({ p }: { p: Pocket }) {
       <Sheet open={open} onClose={() => setOpen(false)} title={`돈 채우기 · ${p.name}`} id="topUp">
         <div className="amt" style={{ display: "flex", justifyContent: "center", alignItems: "baseline" }}>
           <b>{s}</b>
-          <input autoFocus inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ ...field, flex: "none", width: `${Math.max(1, amount.length) + 0.5}ch`, fontSize: 44, fontWeight: 700, letterSpacing: "-1.5px", marginTop: 10 }} />
+          <FitInput autoFocus inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ ...field, flex: "none", fontSize: 44, fontWeight: 700, letterSpacing: "-1.5px", marginTop: 10 }} />
         </div>
         <label className="flab">어떻게 채웠어요?</label>
         <div className="rough">
