@@ -158,7 +158,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
         cur: e.currency,
         amt: Number(e.amount),
         el: (
-          <Go key={e.id} className="exc" href={e.booking_id && !e.day ? `/trips/${id}/bookings/${e.booking_id}` : `${base}/${e.id}`}>
+          <Go key={e.id} className="exc" href={`${base}/${e.id}`}>
             <span className={`ec ${c.ec}`}>
               <Ic n={c.ic as IcName} />
             </span>

@@ -155,6 +155,14 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
             </div>
             {cur !== "KRW" && <span className="sub">≈ {Math.round(toKrw(amt, cur, trip)).toLocaleString()}원</span>}
           </div>
+          {expense?.booking_id && (
+            <Go
+              href={`/trips/${trip.id}/bookings/${expense.booking_id}`}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, margin: "4px 0 14px", padding: "10px 12px", borderRadius: 12, background: "var(--bg)", fontSize: 14, fontWeight: 600, color: "var(--ink)" }}
+            >
+              <Ic n="link" /> 연결된 예약 보기
+            </Go>
+          )}
 
           <label className="flab">누가 냈나요?</label>
           <div className="payer">
