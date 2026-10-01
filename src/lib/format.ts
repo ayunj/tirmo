@@ -83,6 +83,7 @@ export function mdLong(s: string) {
 
 /** 통화 기호 붙이기: ¥2,400 */
 export function money(n: number, sym: string) {
-  const v = Math.round(n * 100) / 100;
+  const whole = !sym || /[₩¥₫]|Rp/.test(sym);
+  const v = whole ? Math.round(n) : Math.round(n * 100) / 100;
   return (v < 0 ? "-" : "") + sym + Math.abs(v).toLocaleString("ko-KR");
 }

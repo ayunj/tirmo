@@ -8,5 +8,5 @@ export default async function EditExpense({ params }: { params: Promise<{ id: st
   const m = await loadMoney(id);
   const e = m.expenses.find((x) => x.id === eid);
   if (!e) notFound();
-  return <ExpenseForm trip={m.trip} days={days(m.trip.start_date, m.trip.end_date)} me={m.user.id} members={m.people} pockets={m.pockets} expenses={m.expenses} expense={e} />;
+  return <ExpenseForm trip={m.trip} days={days(m.trip.start_date, m.trip.end_date)} me={m.user.id} members={m.people} pockets={m.pockets} expenses={m.expenses} topups={m.topups} expense={e} />;
 }

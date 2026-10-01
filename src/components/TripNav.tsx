@@ -1,30 +1,42 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, House, LayoutGrid, CirclePlus, Wallet } from "lucide-react";
+import Ic from "@/components/Ic";
+import QuickSheet from "@/components/QuickSheet";
 
+/** 아래 탭 (목업 .nav). 목록 화면에서만 보여요 */
 export default function TripNav({ id }: { id: string }) {
   const path = usePathname();
+  const [quick, setQuick] = useState(false);
   const base = `/trips/${id}`;
-  const items = [
-    { href: base, label: "여행", icon: House, on: path === base },
-    { href: `${base}/plan`, label: "일정", icon: CalendarDays, on: path.startsWith(`${base}/plan`) },
-    { href: `${base}/plan/new`, label: "추가", icon: CirclePlus, on: false },
-    { href: `${base}/money`, label: "경비", icon: Wallet, on: path.startsWith(`${base}/money`) },
-    { href: `${base}/more`, label: "더보기", icon: LayoutGrid, on: ["/more", "/invite", "/bookings", "/pack", "/wish", "/diary"].some((x) => path.startsWith(base + x)) },
-  ];
-  // 목록 화면에서만 보여요 (입력 · 상세 화면에서는 숨김)
   const rest = path.slice(base.length);
-  if (!["", "/plan", "/money", "/more", "/invite", "/bookings", "/pack", "/wish", "/diary"].includes(rest)) return null;
+  const show = ["", "/plan", "/money", "/more", "/bookings", "/pack", "/wish", "/diary"].includes(rest) || (/^\/money\/pocket\/[^/]+$/.test(rest) && !rest.endsWith("/new"));
+  if (!show) return null;
+  const tab = rest === "" ? "home" : rest === "/plan" ? "plan" : rest.startsWith("/money") ? "money" : "more";
+  const items = [
+    { k: "home", href: base, label: "여행", n: "house" as const },
+    { k: "plan", href: `${base}/plan`, label: "일정", n: "calendar-days" as const },
+    { k: "money", href: `${base}/money`, label: "경비", n: "wallet" as const },
+    { k: "more", href: `${base}/more`, label: "더보기", n: "layout-grid" as const },
+  ];
+  const link = (x: (typeof items)[number]) => (
+    <Link key={x.k} href={x.href} className={tab === x.k ? "on" : ""}>
+      <Ic n={x.n} />
+      {x.label}
+    </Link>
+  );
   return (
-    <nav className="fixed bottom-0 left-1/2 z-30 flex w-full max-w-[480px] -translate-x-1/2 justify-around border-t border-line bg-white pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5">
-      {items.map(({ href, label, icon: Icon, on }) => (
-        <Link key={label} href={href} className={`flex w-14 flex-col items-center gap-1 text-[11px] font-semibold ${on ? "text-ink" : "text-sub2"}`}>
-          <Icon size={23} strokeWidth={on ? 2.2 : 1.8} />
-          {label}
-        </Link>
-      ))}
-    </nav>
+    <>
+      <div className="nav">
+        {items.slice(0, 2).map(link)}
+        <div className="plus" onClick={() => setQuick(true)}>
+          <Ic n="plus" />
+        </div>
+        {items.slice(2).map(link)}
+      </div>
+      <QuickSheet id={id} open={quick} onClose={() => setQuick(false)} />
+    </>
   );
 }

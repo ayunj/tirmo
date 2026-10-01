@@ -1,15 +1,25 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, ChevronLeft, ExternalLink, Pencil, ReceiptText } from "lucide-react";
 import { loadTrip } from "@/lib/trip";
-import { BOOKING_FIELDS, between, bookingTitle, kindLabel, nights } from "@/lib/booking";
-import { days, md } from "@/lib/format";
+import { airportCode, between, kindLabel, nights } from "@/lib/booking";
+import { days, parseDate } from "@/lib/format";
 import { money, sym, toKrw } from "@/lib/money";
-import { BookingIcon } from "@/components/icons";
-import { StatusTag } from "@/components/bits";
-import BookingToPlan from "@/components/BookingToPlan";
-import Photos from "@/components/ui/Photos";
+import Go from "@/components/Go";
+import Ic, { type IcName } from "@/components/Ic";
+import { statusTag } from "@/components/BookingCards";
+import { Captures, CopyBtn, DelBooking, ToPlan } from "@/components/BookingBits";
 import type { Booking } from "@/lib/types";
+
+const WK = ["일", "월", "화", "수", "목", "금", "토"];
+const KIND_IC: Record<string, IcName> = { flight: "plane", hotel: "bed-double", car: "car", restaurant: "utensils", tour: "ticket", etc: "ellipsis" };
+const dfull = (s: string) => {
+  const x = parseDate(s);
+  return `${x.getFullYear()}.${String(x.getMonth() + 1).padStart(2, "0")}.${String(x.getDate()).padStart(2, "0")} (${WK[x.getDay()]})`;
+};
+const dshort = (s?: string) => {
+  if (!s) return "-";
+  const x = parseDate(s);
+  return `${x.getMonth() + 1}/${x.getDate()} (${WK[x.getDay()]})`;
+};
 
 export default async function BookingDetail({ params }: { params: Promise<{ id: string; bid: string }> }) {
   const { id, bid } = await params;
@@ -17,142 +27,266 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
   const [{ data }, ev, ex] = await Promise.all([
     supabase.from("bookings").select("*").eq("id", bid).eq("trip_id", id).maybeSingle(),
     supabase.from("events").select("id, day").eq("booking_id", bid).order("day"),
-    supabase.from("expenses").select("id", { count: "exact", head: true }).eq("booking_id", bid),
+    supabase.from("expenses").select("id, pocket_id, payer_id, pockets(name, kind, shared)").eq("booking_id", bid),
   ]);
   if (!data) notFound();
   const b = data as Booking;
   const d = b.details || {};
+  const ds = days(trip.start_date, trip.end_date);
   const linked = ev.data ?? [];
-  const shown = new Set(["date", "from", "to", "from_time", "to_time", "airline", "flight_no", "checkin", "checkout", "checkin_time", "checkout_time"]);
-  const rest = BOOKING_FIELDS[b.kind].filter((f) => !shown.has(f.key) && d[f.key]);
+  const exp = (ex.data ?? [])[0] as unknown as { pockets: { name: string; kind: string; shared: boolean } | null; payer_id: string | null } | undefined;
   const krw = b.amount != null ? toKrw(Number(b.amount), b.currency || "KRW", trip) : 0;
+  const n = members.length;
+  const edit = `/trips/${id}/bookings/${bid}/edit`;
+
+  const Money =
+    b.amount != null ? (
+      <div className="boxc" style={b.kind !== "flight" ? { background: "var(--bg)" } : undefined}>
+        <div className="row">
+          <span className="sub">{b.kind === "flight" ? "결제 금액" : "금액"}</span>
+          <b>
+            {money(Number(b.amount), sym(b.currency || "KRW"))}
+            {d.pay ? ` · ${d.pay}` : ""}
+            {b.kind === "flight" && d.pax ? <span className="sub"> / {d.pax}</span> : null}
+          </b>
+        </div>
+        {(n > 1 || exp) && (
+          <div className="row" style={{ marginTop: 6 }}>
+            <span className="sub">{n > 1 ? `1인 ${money(krw / n, "₩")}` : b.currency !== "KRW" ? `≈ ${money(krw, "₩")}` : ""}</span>
+            {exp &&
+              (exp.pockets ? (
+                <span className={`pk ${exp.pockets.shared ? "team" : exp.pockets.kind}`}>
+                  <Ic n={exp.pockets.shared ? "users" : exp.pockets.kind === "card" ? "credit-card" : exp.pockets.kind === "bank" ? "landmark" : "banknote"} /> {exp.pockets.name}
+                </span>
+              ) : (
+                <span className="pk team">
+                  <Ic n="receipt" /> 경비에 기록됨
+                </span>
+              ))}
+          </div>
+        )}
+      </div>
+    ) : null;
+
+  const Btns = (
+    <div className="btns2">
+      {linked.length ? (
+        <Go href={`/trips/${id}/plan?day=${linked[0].day ?? "none"}`}>
+          <Ic n="calendar-days" /> 일정에서 보기
+        </Go>
+      ) : (
+        <ToPlan b={b} days={ds} />
+      )}
+      <Go href={`/trips/${id}/money?tab=list`}>
+        <Ic n="receipt" /> 경비 내역
+      </Go>
+    </div>
+  );
+
+  if (b.kind === "flight") {
+    const grid = [
+      ["예약번호", d.pnr],
+      ["탑승객", d.pax],
+      ["좌석", d.seat],
+      ["탑승 시작", d.boarding],
+      ["게이트", d.gate],
+      ["수하물", d.bag],
+    ];
+    return (
+      <section className="screen on" id="bookDetail">
+        <div className="scr nonav">
+          <div className="hd">
+            <Go as="span" className="ib" back>
+              <Ic n="chevron-left" />
+            </Go>
+            <h2>항공권</h2>
+            <Go as="span" className="ib" href={edit}>
+              <Ic n="pencil" />
+            </Go>
+          </div>
+          <div className="pad" style={{ paddingBottom: 24 }}>
+            <div className="pass">
+              <div className="ps-top">
+                <div className="row" style={{ opacity: 0.75, fontSize: 12 }}>
+                  <span>{[d.airline, d.flight_no].filter(Boolean).join(" · ")}</span>
+                  <span>{d.date ? dfull(d.date) : ""}</span>
+                </div>
+                <div className="ps-rt">
+                  <div>
+                    <b>{airportCode(d.from) || "—"}</b>
+                    <span>{d.from}</span>
+                    <em>{d.from_time}</em>
+                  </div>
+                  <div className="ps-mid">
+                    <i />
+                    <Ic n="plane" />
+                    <i />
+                    <span>{between(d.from_time, d.to_time)}</span>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <b>{airportCode(d.to) || "—"}</b>
+                    <span>{d.to}</span>
+                    <em>{d.to_time}</em>
+                  </div>
+                </div>
+              </div>
+              <div className="ps-cut" />
+              <div className="ps-grid">
+                {grid.map(([k, v]) => (
+                  <div key={k}>
+                    <span>{k}</span>
+                    <b>{v || "—"}</b>
+                  </div>
+                ))}
+              </div>
+              <Captures b={b} />
+            </div>
+            {Money}
+            {(b.memo || b.link) && (
+              <div className="boxc">
+                {b.memo && <div style={{ fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-line" }}>{b.memo}</div>}
+                {b.link && /^https?:\/\//.test(b.link) && (
+                  <a href={b.link} target="_blank" rel="noreferrer" className="link" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 700, marginTop: b.memo ? 8 : 0 }}>
+                    <Ic n="arrow-up-right" /> 예약 페이지 열기
+                  </a>
+                )}
+              </div>
+            )}
+            {Btns}
+            <DelBooking b={b} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // 숙소 · 렌터카 · 식당 · 투어 · 기타
+  const kv: [IcName, string][] = [];
+  if (d.pnr) kv.push(["hash", `예약번호 ${d.pnr}`]);
+  if (d.room || d.pax) kv.push([b.kind === "hotel" ? "bed-double" : "users", [d.room, d.pax].filter(Boolean).join(" · ")]);
+  if (d.model) kv.push(["car", d.model]);
+  if (d.options) kv.push(["check", d.options.split(",").join(" · ")]);
+  if (b.kind === "car" && d.pickup) kv.push(["map-pin", `픽업 ${d.pickup}${d.dropoff ? ` → 반납 ${d.dropoff}` : ""}`]);
+  if (d.address) kv.push(["map-pin", d.address]);
+  if (d.open_at) kv.push(["calendar-clock", `예약 오픈 ${d.open_at}${d.open_rule ? ` (${d.open_rule})` : ""}`]);
+  if (d.wait) kv.push(["users", d.wait]);
+  if (d.cancel) kv.push(["calendar-clock", `무료 취소 ${d.cancel}`]);
+  if (d.site) kv.push(["link", `예약한 곳 ${d.site}`]);
+  if (b.memo) kv.push(["pencil", b.memo]);
+
+  const startD = b.kind === "hotel" ? d.checkin : b.kind === "car" ? d.pickup_date : d.date;
+  const startT = b.kind === "hotel" ? d.checkin_time : b.kind === "car" ? d.pickup_time : d.time;
+  const endD = b.kind === "hotel" ? d.checkout : b.kind === "car" ? d.dropoff_date : undefined;
+  const endT = b.kind === "hotel" ? d.checkout_time : b.kind === "car" ? d.dropoff_time : undefined;
+  const nn = nights(startD, endD);
 
   return (
-    <main className="pb-10">
-      <header className="hd">
-        <Link href={`/trips/${id}/bookings`} className="ib -ml-2" aria-label="뒤로">
-          <ChevronLeft size={24} />
-        </Link>
-        <h1>{kindLabel(b.kind)}</h1>
-        <Link href={`/trips/${id}/bookings/${bid}/edit`} className="ib" aria-label="수정">
-          <Pencil size={20} />
-        </Link>
-      </header>
-
-      <div className="px-4 pt-2">
-        <section className="card p-5">
-          {b.kind === "flight" ? (
-            <>
-              <div className="flex justify-between text-[12.5px] font-semibold text-sub">
-                <span>{[d.airline, d.flight_no].filter(Boolean).join(" · ")}</span>
-                <span>{d.date ? md(d.date) : ""}</span>
-              </div>
-              <div className="mt-3 flex items-end justify-between gap-2">
-                <div className="min-w-0">
-                  <b className="block break-keep text-[26px] font-extrabold leading-tight tracking-tight">{d.from || "출발"}</b>
-                  <b className="mt-1 block text-[17px]">{d.from_time}</b>
-                </div>
-                <span className="pb-1 text-[12px] text-sub">{between(d.from_time, d.to_time)}</span>
-                <div className="min-w-0 text-right">
-                  <b className="block break-keep text-[26px] font-extrabold leading-tight tracking-tight">{d.to || "도착"}</b>
-                  <b className="mt-1 block text-[17px]">{d.to_time}</b>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-md bg-sky-s px-1.5 py-0.5 text-[11.5px] font-bold text-sky-d">
-                  <BookingIcon kind={b.kind} size={13} /> {kindLabel(b.kind)}
-                </span>
-                <StatusTag s={b.status} />
-              </div>
-              <b className="mt-2 block text-[21px] font-extrabold leading-snug tracking-tight">{bookingTitle(b)}</b>
-              {b.kind === "hotel" && (
-                <div className="mt-4 flex items-center rounded-xl bg-bg px-4 py-3">
-                  <div className="flex-1">
-                    <span className="block text-[12px] text-sky-d">체크인</span>
-                    <b className="text-[16px]">{d.checkin ? md(d.checkin) : "-"}</b>
-                    {d.checkin_time && <span className="block text-[12px] text-sub">{d.checkin_time}부터</span>}
-                  </div>
-                  <b className="px-2 text-[13px]">{nights(d.checkin, d.checkout) > 0 ? `${nights(d.checkin, d.checkout)}박` : ""}</b>
-                  <div className="flex-1">
-                    <span className="block text-[12px] text-sky-d">체크아웃</span>
-                    <b className="text-[16px]">{d.checkout ? md(d.checkout) : "-"}</b>
-                    {d.checkout_time && <span className="block text-[12px] text-sub">{d.checkout_time}까지</span>}
-                  </div>
-                </div>
-              )}
-              {["restaurant", "tour", "etc"].includes(b.kind) && d.date && (
-                <div className="mt-1 text-[15px] font-semibold text-ink2">
-                  {md(d.date)} {d.time}
-                </div>
-              )}
-            </>
+    <section className="screen on" id="bookHotel">
+      <div className="scr full nonav">
+        <div className={`hero${b.photos?.[0] ? "" : " noimg k-blue"}`} style={{ height: b.photos?.[0] ? 260 : 200 }}>
+          {b.photos?.[0] && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="im" src={b.photos[0]} alt="" />
           )}
-
-          {rest.length > 0 && (
-            <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-3.5 border-t border-dashed border-line pt-4">
-              {rest.map((f) => (
-                <div key={f.key} className={f.key === "address" || f.key === "room" || f.key === "open_at" ? "col-span-2" : ""}>
-                  <span className="block text-[12px] text-sub">{f.label}</span>
-                  {f.key === "phone" ? (
-                    <a href={`tel:${d[f.key]}`} className="text-[15px] font-bold text-sky-d">
-                      {d[f.key]}
-                    </a>
-                  ) : (
-                    <b className="select-all break-words text-[15px]">{d[f.key]}</b>
-                  )}
-                </div>
-              ))}
+          <div className="hero-ic">
+            <Ic n={KIND_IC[b.kind]} />
+          </div>
+          <div className="grad" />
+          <div className="cv-top">
+            <Go as="span" className="glass circ" back>
+              <Ic n="chevron-left" />
+            </Go>
+            <Go as="span" className="glass circ" href={edit}>
+              <Ic n="pencil" />
+            </Go>
+          </div>
+        </div>
+        <div className="sheet">
+          <div className="tags">
+            <span className="tag blue">
+              <Ic n={KIND_IC[b.kind]} /> {kindLabel(b.kind)}
+            </span>
+            {b.status === "예약 완료" ? <span className="tag green">확정</span> : statusTag(b.status)}
+          </div>
+          <h3 className="ptitle" style={{ fontSize: 19 }}>
+            {b.title}
+          </h3>
+          {startD && (
+            <div className="hc-g big">
+              <div>
+                <span>{b.kind === "hotel" ? "체크인" : b.kind === "car" ? "픽업" : "날짜"}</span>
+                <b>{dshort(startD)}</b>
+                {startT && <em>{startT}{b.kind === "hotel" ? "부터" : ""}</em>}
+              </div>
+              {endD && (
+                <>
+                  <div className="arr">{nn > 0 ? <i>{nn}박</i> : <Ic n="chevron-right" />}</div>
+                  <div>
+                    <span>{b.kind === "hotel" ? "체크아웃" : "반납"}</span>
+                    <b>{dshort(endD)}</b>
+                    {endT && <em>{endT}{b.kind === "hotel" ? "까지" : ""}</em>}
+                  </div>
+                </>
+              )}
             </div>
           )}
-        </section>
-
-        {b.photos?.length > 0 && (
-          <section className="card mt-2.5 p-4">
-            <Photos urls={b.photos} />
-          </section>
-        )}
-
-        {b.amount != null && (
-          <section className="card mt-2.5 flex items-center justify-between p-4">
-            <div>
-              <span className="text-[13px] text-sub">금액</span>
-              {b.currency !== "KRW" && <span className="block text-[12.5px] text-sub">≈ {money(krw, "₩")}</span>}
-              {members.length > 1 && <span className="block text-[12.5px] text-sub">1인 {money(krw / members.length, "₩")}</span>}
+          {kv.map(([ic, t], i) => (
+            <div key={i} className="kv" style={{ whiteSpace: "pre-line" }}>
+              <span>
+                <Ic n={ic} />
+              </span>
+              {t}
             </div>
-            <div className="text-right">
-              <b className="text-[18px]">{money(Number(b.amount), sym(b.currency || "KRW"))}</b>
-              {d.pay && <span className="block text-[12.5px] font-semibold text-sub">{d.pay}</span>}
+          ))}
+          {Money}
+          {b.photos?.length > 0 && (
+            <div className="boxc" style={{ padding: 0, overflow: "hidden" }}>
+              <Captures b={b} label="바우처 · 캡처 넣기" />
             </div>
-          </section>
-        )}
-
-        {(b.memo || b.link) && (
-          <section className="card mt-2.5 p-4">
-            {b.memo && <p className="whitespace-pre-line text-[14.5px] leading-relaxed text-ink2">{b.memo}</p>}
-            {b.link && /^https?:\/\//.test(b.link) && (
-              <a href={b.link} target="_blank" rel="noreferrer" className={`flex items-center gap-1.5 text-[14px] font-semibold text-sky-d ${b.memo ? "mt-3" : ""}`}>
-                <ExternalLink size={15} /> 예약 페이지 열기
+          )}
+          <div className="btns3">
+            {d.phone ? (
+              <a href={`tel:${d.phone}`}>
+                <div>
+                  <Ic n="phone" />
+                  <span>전화</span>
+                </div>
               </a>
+            ) : b.link && /^https?:\/\//.test(b.link) ? (
+              <a href={b.link} target="_blank" rel="noreferrer">
+                <div>
+                  <Ic n="arrow-up-right" />
+                  <span>예약 페이지</span>
+                </div>
+              </a>
+            ) : (
+              <Go href={edit}>
+                <Ic n="phone" />
+                <span>전화 적기</span>
+              </Go>
             )}
-          </section>
-        )}
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {linked.length ? (
-            <Link href={`/trips/${id}/plan?day=${linked[0].day ?? "none"}`} className="btn flex items-center justify-center gap-1.5 !py-3.5 !text-[15px]">
-              <CalendarDays size={17} /> 일정에서 보기
-            </Link>
-          ) : (
-            <BookingToPlan b={b} days={days(trip.start_date, trip.end_date)} />
+            {d.address || d.pickup ? (
+              <CopyBtn text={d.address || d.pickup} />
+            ) : (
+              <Go href={edit}>
+                <Ic n="map-pin" />
+                <span>주소 적기</span>
+              </Go>
+            )}
+            <Go href={`/trips/${id}/money/new?title=${encodeURIComponent(b.title)}`}>
+              <Ic n="receipt" />
+              <span>결제 기록</span>
+            </Go>
+          </div>
+          {!b.photos?.length && (
+            <div className="boxc" style={{ padding: 0, overflow: "hidden" }}>
+              <Captures b={b} label="바우처 · 캡처 넣기" />
+            </div>
           )}
-          <Link href={`/trips/${id}/money?tab=list`} className="btn-sub flex items-center justify-center gap-1.5 !py-3.5 !text-[15px]">
-            <ReceiptText size={17} /> 경비 내역{ex.count ? ` ${ex.count}` : ""}
-          </Link>
+          {Btns}
+          <DelBooking b={b} />
         </div>
       </div>
-    </main>
+    </section>
   );
 }

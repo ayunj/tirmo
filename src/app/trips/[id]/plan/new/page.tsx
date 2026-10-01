@@ -7,6 +7,6 @@ export default async function NewEvent({ params, searchParams }: { params: Promi
   const { id } = await params;
   const { day, wish } = await searchParams;
   const { supabase, trip } = await loadTrip(id);
-  const opts = await linkOptions(supabase, id);
-  return <EventForm tripId={id} days={days(trip.start_date, trip.end_date)} defaultDay={day ?? (wish ? "none" : undefined)} defaultWish={wish} {...opts} />;
+  const [opts, ev] = await Promise.all([linkOptions(supabase, id), supabase.from("events").select("id, day, time_text, sort, title").eq("trip_id", id).order("sort")]);
+  return <EventForm tripId={id} days={days(trip.start_date, trip.end_date)} dayEvents={ev.data ?? []} defaultDay={day ?? (wish ? "none" : undefined)} defaultWish={wish} {...opts} />;
 }

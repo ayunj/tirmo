@@ -1,98 +1,85 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, UserRound } from "lucide-react";
 import { getMe } from "@/lib/supabase/server";
-import { dday, range } from "@/lib/format";
-import { Flags, NamePill, coverStyle } from "@/components/bits";
+import { dday, today } from "@/lib/format";
+import { country } from "@/lib/places";
+import { coverDate, cv, shortRange } from "@/lib/cover";
+import Go from "@/components/Go";
+import Ic from "@/components/Ic";
+import { CvFlags, Names } from "@/components/TripFlags";
+import TripSearch from "@/components/TripSearch";
+import TripRows from "@/components/TripRows";
 import type { Member, Trip } from "@/lib/types";
 
-export default async function TripsPage() {
+type Row = Trip & { trip_members: Member[]; entries: { count: number }[] };
+
+export default async function TripsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q = "" } = await searchParams;
   const { supabase, user, profile } = await getMe();
   if (!user) redirect("/login");
   if (!profile?.onboarded) redirect("/onboarding");
 
   const { data } = await supabase
     .from("trips")
-    .select("*, trip_members(user_id, role, profiles(nickname, color))")
+    .select("*, trip_members(user_id, role, profiles(nickname, color)), entries(count)")
     .order("start_date", { ascending: false, nullsFirst: true });
-  const trips = (data ?? []) as (Trip & { trip_members: Member[] })[];
+  const all = (data ?? []) as Row[];
+  const trips = q ? all.filter((t) => [t.title, ...t.cities, ...t.countries.map((c) => country(c)?.name ?? "")].join(" ").includes(q)) : all;
+  const now = today();
+  const upcoming = trips.filter((t) => !t.end_date || t.end_date >= now).sort((a, b) => (a.start_date ?? "9999").localeCompare(b.start_date ?? "9999"));
+  const past = trips.filter((t) => t.end_date && t.end_date < now);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const upcoming = trips
-    .filter((t) => !t.end_date || t.end_date >= today)
-    .sort((a, b) => (a.start_date ?? "9999").localeCompare(b.start_date ?? "9999"));
-  const past = trips.filter((t) => t.end_date && t.end_date < today);
-  const byYear = past.reduce<Record<string, typeof past>>((acc, t) => {
-    const y = (t.start_date ?? "").slice(0, 4) || "날짜 없음";
-    (acc[y] ||= []).push(t);
-    return acc;
-  }, {});
+  const nDays = trips.reduce((s, t) => (t.start_date ? s + Math.round((new Date(t.end_date || t.start_date).getTime() - new Date(t.start_date).getTime()) / 864e5) + 1 : s), 0);
+  const nCountries = new Set(trips.flatMap((t) => (t.kind === "abroad" ? t.countries : ["kr"]))).size;
+  const names = (t: Row) => t.trip_members.map((m) => ({ nickname: m.profiles?.nickname || "?", color: m.profiles?.color || "#8B95A1" }));
+  const label = (t: Row) => (t.kind === "domestic" ? t.cities[0] : country(t.countries[0] ?? "")?.name) || t.title.slice(0, 4);
+
+  const rows = past.map((t) => {
+    const n = t.trip_members.length;
+    const rec = t.entries?.[0]?.count ?? 0;
+    const sub = [shortRange(t.start_date, t.end_date), n > 1 ? `${n}명` : "혼자", rec ? `기록 ${rec}` : ""].filter(Boolean).join(" · ");
+    return { id: t.id, year: (t.start_date ?? "").slice(0, 4), title: t.title, sub, label: label(t), color: t.cover_color, trip: { kind: t.kind, countries: t.countries, cities: t.cities } };
+  });
 
   return (
-    <main className="pb-16">
-      <header className="hd">
-        <h1 className="!text-[24px]">내 여행</h1>
-        <Link href="/me" className="ib" aria-label="내 이름">
-          <UserRound size={21} />
-        </Link>
-        <Link href="/trips/new" className="ib" aria-label="새 여행">
-          <Plus size={22} />
-        </Link>
-      </header>
-
-      <div className="px-4 pt-3">
-        {trips.length === 0 && (
-          <div className="card mt-2 px-6 py-12 text-center">
-            <p className="text-[17px] font-bold">아직 여행이 없어요</p>
-            <p className="s13 mt-1">첫 여행을 만들거나 받은 초대 링크를 열어 주세요</p>
-            <Link href="/trips/new" className="btn mt-6">
-              새 여행 만들기
-            </Link>
-          </div>
-        )}
-
-        {upcoming.map((t) => (
-          <Link key={t.id} href={`/trips/${t.id}`} className="relative mb-3 block h-[200px] overflow-hidden rounded-[22px] text-white" style={coverStyle(t)}>
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30" />
-            <div className="relative flex h-full flex-col p-5">
-              <div className="flex items-center justify-between">
-                <Flags trip={t} size={18} />
-                <span className="rounded-full bg-black/30 px-2.5 py-1 text-xs font-bold">{dday(t.start_date, t.end_date)}</span>
-              </div>
-              <div className="mt-auto text-[24px] font-extrabold leading-tight tracking-tight">{t.title}</div>
-              <div className="mt-1 text-[12.5px] font-semibold opacity-90">{range(t.start_date, t.end_date)}</div>
-              <div className="mt-2.5 flex gap-1">
-                {t.trip_members.map((m) => (
-                  <NamePill key={m.user_id} name={m.profiles?.nickname || "?"} color={m.profiles?.color || "#8B95A1"} />
-                ))}
-              </div>
+    <section className="screen on" id="trips">
+      <div className="scr nonav">
+        <div className="hd">
+          <h2 className="big">내 여행</h2>
+          <TripSearch q={q} />
+          <Go as="span" className="ib dark" href="/trips/new">
+            <Ic n="plus" />
+          </Go>
+        </div>
+        <div className="pad">
+          {all.length > 0 && !q && (
+            <div className="sub" style={{ margin: "-4px 0 12px" }}>
+              {all.length}개의 여행 · {nCountries}개국 · {nDays}일
             </div>
-          </Link>
-        ))}
-
-        {Object.keys(byYear)
-          .sort()
-          .reverse()
-          .map((y) => (
-            <section key={y}>
-              <div className="mx-1 mb-2 mt-5 text-[13px] font-bold text-sub">{y}</div>
-              <div className="card overflow-hidden">
-                {byYear[y].map((t, i) => (
-                  <Link key={t.id} href={`/trips/${t.id}`} className={`flex items-center gap-3 px-4 py-3 ${i ? "border-t border-line" : ""}`}>
-                    <div className="h-12 w-12 flex-none rounded-xl" style={coverStyle(t)} />
-                    <div className="min-w-0 flex-1">
-                      <b className="block truncate text-base font-semibold">{t.title}</b>
-                      <span className="s13">
-                        {range(t.start_date, t.end_date)} · {t.trip_members.length > 1 ? `${t.trip_members.length}명` : "혼자"}
-                      </span>
-                    </div>
-                    <Flags trip={t} />
-                  </Link>
-                ))}
+          )}
+          {upcoming.map((t) => (
+            <Go key={t.id} className="upcoming colorcv" href={`/trips/${t.id}`} style={{ ...cv(t), marginBottom: 10 }}>
+              {t.cover_photo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="im" src={t.cover_photo} alt="" />
+              )}
+              {t.start_date && <span className="glass pill">{dday(t.start_date, t.end_date)}</span>}
+              <div className="cc">
+                <CvFlags trip={t} up />
+                <div className="disp cc-t">{t.title}</div>
+                <div className="cc-d">{coverDate(t.start_date, t.end_date)}</div>
+                <Names list={names(t)} oncv style={{ justifyContent: "center", marginTop: 14 }} />
               </div>
-            </section>
+            </Go>
           ))}
+          {all.length === 0 && (
+            <Go className="addline" href="/trips/new" style={{ marginTop: 8 }}>
+              <Ic n="plus" /> 첫 여행 만들기
+            </Go>
+          )}
+          <TripRows rows={rows} />
+          {q && trips.length === 0 && <div className="sub" style={{ textAlign: "center", padding: "40px 0" }}>찾는 여행이 없어요</div>}
+        </div>
       </div>
-    </main>
+    </section>
   );
 }

@@ -119,3 +119,22 @@ export function nights(a?: string, b?: string) {
   if (!a || !b) return 0;
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 864e5);
 }
+
+/** 공항 이름 → 세 글자 코드 (모르면 적은 그대로) */
+const AIRPORTS: [string, string][] = [
+  ["인천", "ICN"], ["김포", "GMP"], ["김해", "PUS"], ["부산", "PUS"], ["제주", "CJU"], ["대구", "TAE"], ["청주", "CJJ"], ["무안", "MWX"], ["양양", "YNY"],
+  ["후쿠오카", "FUK"], ["나리타", "NRT"], ["하네다", "HND"], ["간사이", "KIX"], ["오사카", "KIX"], ["나고야", "NGO"], ["삿포로", "CTS"], ["신치토세", "CTS"], ["오키나와", "OKA"], ["나하", "OKA"], ["기타큐슈", "KKJ"], ["구마모토", "KMJ"], ["가고시마", "KOJ"], ["마쓰야마", "MYJ"], ["다카마쓰", "TAK"], ["시즈오카", "FSZ"], ["도쿄", "NRT"],
+  ["타오위안", "TPE"], ["타이베이", "TPE"], ["송산", "TSA"], ["가오슝", "KHH"], ["타이중", "RMQ"],
+  ["방콕", "BKK"], ["수완나품", "BKK"], ["돈므앙", "DMK"], ["치앙마이", "CNX"], ["푸껫", "HKT"], ["다낭", "DAD"], ["하노이", "HAN"], ["호치민", "SGN"], ["나트랑", "CXR"], ["깜란", "CXR"], ["푸꾸옥", "PQC"],
+  ["세부", "CEB"], ["마닐라", "MNL"], ["보라카이", "MPH"], ["싱가포르", "SIN"], ["창이", "SIN"], ["홍콩", "HKG"], ["마카오", "MFM"], ["상하이", "PVG"], ["베이징", "PEK"], ["발리", "DPS"], ["쿠알라룸푸르", "KUL"], ["코타키나발루", "BKI"],
+  ["괌", "GUM"], ["사이판", "SPN"], ["하와이", "HNL"], ["호놀룰루", "HNL"], ["로스앤젤레스", "LAX"], ["LA", "LAX"], ["뉴욕", "JFK"], ["샌프란시스코", "SFO"], ["시애틀", "SEA"], ["밴쿠버", "YVR"], ["토론토", "YYZ"],
+  ["파리", "CDG"], ["런던", "LHR"], ["로마", "FCO"], ["프랑크푸르트", "FRA"], ["바르셀로나", "BCN"], ["마드리드", "MAD"], ["취리히", "ZRH"], ["프라하", "PRG"], ["이스탄불", "IST"], ["두바이", "DXB"], ["시드니", "SYD"], ["오클랜드", "AKL"],
+];
+export function airportCode(t?: string) {
+  if (!t) return "";
+  const s = t.trim();
+  if (/^[A-Za-z]{3}$/.test(s)) return s.toUpperCase();
+  const m = s.match(/\b([A-Z]{3})\b/);
+  if (m) return m[1];
+  return AIRPORTS.find(([k]) => s.includes(k))?.[1] ?? s;
+}

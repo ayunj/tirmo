@@ -9,7 +9,7 @@ export async function loadTrip(id: string) {
   if (!profile?.onboarded) redirect("/onboarding");
   const { data } = await supabase
     .from("trips")
-    .select("*, trip_members(user_id, role, profiles(nickname, color))")
+    .select("*, trip_members(user_id, role, joined_at, profiles(nickname, color))")
     .eq("id", id)
     .maybeSingle();
   if (!data) notFound();

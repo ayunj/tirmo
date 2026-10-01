@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { EXP_CATS, money, pocketUse, sym, toKrw } from "@/lib/money";
+import { EXP_CATS, expCat, money, pkStyle, pocketUse, sym, toKrw } from "@/lib/money";
 import { md, nowTime, today } from "@/lib/format";
-import { ExpIcon, POCKET_ICON } from "@/components/icons";
-import FormHeader from "@/components/ui/FormHeader";
-import type { Expense, Pocket, Trip } from "@/lib/types";
+import { removePhotos } from "@/lib/photo";
+import { askDel, toast } from "@/lib/ui";
+import Go from "@/components/Go";
+import Ic, { type IcName } from "@/components/Ic";
+import DatePick from "@/components/ui/DatePick";
+import PhotoField from "@/components/ui/PhotoField";
+import type { Expense, Pocket, Topup, Trip } from "@/lib/types";
 
 type M = { id: string; nickname: string; color: string };
 type Props = {
@@ -18,54 +21,67 @@ type Props = {
   members: M[];
   pockets: Pocket[];
   expenses: Expense[];
+  topups: Topup[];
   expense?: Expense;
+  preset?: { title?: string; day?: string };
 };
 
-export default function ExpenseForm({ trip, days, me, members, pockets, expenses, expense }: Props) {
+/** 지출 쓰기 · 고치기 (목업 moneyAdd) */
+export default function ExpenseForm({ trip, days, me, members, pockets, expenses, topups, expense, preset }: Props) {
   const router = useRouter();
   const edit = !!expense;
   const now = today();
   const hasShared = pockets.some((p) => p.shared);
-  const [payer, setPayer] = useState<string>(expense ? expense.payer_id ?? "shared" : me);
-  const [pocketId, setPocketId] = useState<string>(expense?.pocket_id ?? "");
-  const [cur, setCur] = useState(expense?.currency ?? trip.currency);
+  const firstShared = pockets.find((p) => p.shared);
+  const [payer, setPayer] = useState<string>(expense ? expense.payer_id ?? "shared" : hasShared ? "shared" : me);
+  const [pocketId, setPocketId] = useState<string>(expense ? expense.pocket_id ?? "" : hasShared ? firstShared!.id : "");
+  const [cur, setCur] = useState(expense?.currency ?? (hasShared ? firstShared!.currency : trip.currency));
   const [amount, setAmount] = useState(expense ? String(expense.amount) : "");
   const [cat, setCat] = useState(expense?.category ?? "식비");
-  const [title, setTitle] = useState(expense?.title ?? "");
-  const [day, setDay] = useState<string>(expense ? expense.day ?? "pre" : days.includes(now) ? now : "pre");
+  const [title, setTitle] = useState(expense?.title ?? preset?.title ?? "");
+  const [day, setDay] = useState<string>(expense ? expense.day ?? "pre" : preset?.day && days.includes(preset.day) ? preset.day : days.includes(now) ? now : "pre");
   const [time, setTime] = useState(expense?.time_text ?? (days.includes(now) ? nowTime() : ""));
   const [memo, setMemo] = useState(expense?.memo ?? "");
-  const [split, setSplit] = useState<string[]>(expense ? expense.split?.members ?? [] : members.length > 1 ? members.map((m) => m.id) : []);
+  const [photos, setPhotos] = useState<string[]>(expense?.photos ?? []);
+  const [splitOn, setSplitOn] = useState(expense ? (expense.split?.members?.length ?? 0) > 1 : false);
+  const [spm, setSpm] = useState<string[]>(expense?.split?.members ?? members.map((m) => m.id));
+  const [mode, setMode] = useState<"eq" | "own">(expense?.split?.mode ?? "eq");
+  const [shares, setShares] = useState<Record<string, string>>(Object.fromEntries(Object.entries(expense?.split?.shares ?? {}).map(([k, v]) => [k, String(v)])));
+  const [dp, setDp] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const amt = Number(amount.replace(/,/g, "")) || 0;
   const curs = Array.from(new Set([trip.currency, "KRW"]));
   const shared = payer === "shared";
-  const myPockets = pockets.filter((p) => (shared ? p.shared : !p.shared && (p.owner_id === payer || !p.owner_id)));
-  const pocket = pockets.find((p) => p.id === pocketId);
+  const list = shared ? pockets.filter((p) => p.shared) : pockets.filter((p) => !p.shared && (!p.owner_id || p.owner_id === payer));
+  const others = expenses.filter((e) => e.id !== expense?.id);
+  const s = sym(cur).trim();
+  const each = spm.length ? amt / spm.length : 0;
+  const ownSum = spm.reduce((t, id) => t + (Number(shares[id]) || 0), 0);
 
   function pickPayer(p: string) {
     setPayer(p);
     const pk = pockets.find((x) => x.id === pocketId);
-    if (pk && (p === "shared" ? !pk.shared : pk.shared || (pk.owner_id && pk.owner_id !== p))) setPocketId("");
     if (p === "shared") {
-      const first = pockets.find((x) => x.shared);
-      if (first) {
-        setPocketId(first.id);
-        setCur(first.currency);
+      setSplitOn(false);
+      if (firstShared) {
+        setPocketId(firstShared.id);
+        setCur(firstShared.currency);
       }
-    }
-  }
-
-  function pickPocket(id: string) {
-    setPocketId(id === pocketId ? "" : id);
-    const p = pockets.find((x) => x.id === id);
-    if (p && id !== pocketId) setCur(p.currency);
+    } else if (pk && (pk.shared || (pk.owner_id && pk.owner_id !== p))) setPocketId("");
   }
 
   async function save() {
-    if (!amt || !title.trim()) return;
+    if (!amt) return toast("금액을 적어 주세요");
+    if (!title.trim()) return toast("내용을 적어 주세요");
     setBusy(true);
+    const split =
+      !shared && splitOn && spm.length > 1
+        ? mode === "own"
+          ? { members: spm, mode: "own" as const, shares: Object.fromEntries(spm.map((id) => [id, Number(shares[id]) || 0])) }
+          : { members: spm, mode: "eq" as const }
+        : null;
     const row = {
       trip_id: trip.id,
       payer_id: shared ? null : payer,
@@ -77,170 +93,242 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
       day: day === "pre" ? null : day,
       time_text: time.trim() || null,
       memo: memo.trim() || null,
-      split: !shared && split.length > 1 ? { members: split } : null,
+      split,
+      photos,
     };
     const supabase = createClient();
     const { error } = edit ? await supabase.from("expenses").update(row).eq("id", expense!.id) : await supabase.from("expenses").insert(row);
     setBusy(false);
-    if (error) return alert("저장하지 못했어요");
+    if (error) return toast("저장하지 못했어요");
+    if (edit) {
+      const gone = (expense!.photos || []).filter((p) => !photos.includes(p));
+      if (gone.length) removePhotos(gone);
+    }
     router.replace(`/trips/${trip.id}/money?tab=list`);
     router.refresh();
   }
 
   async function remove() {
-    if (!expense || !confirm("이 지출을 지울까요?")) return;
+    if (!expense || !(await askDel("이 지출을 지울까요?", "포켓 잔액과 정산에서도 빠져요"))) return;
     const { error } = await createClient().from("expenses").delete().eq("id", expense.id);
-    if (error) return alert("지우지 못했어요");
+    if (error) return toast("지우지 못했어요");
+    removePhotos(expense.photos || []);
+    toast("지출을 지웠어요");
     router.replace(`/trips/${trip.id}/money?tab=list`);
     router.refresh();
   }
 
-  const who = (id: string) => members.find((m) => m.id === id);
+  const no = days.indexOf(day) + 1;
+  const showCats = [...EXP_CATS.map((c) => c.key as string), ...(EXP_CATS.some((c) => c.key === cat) ? [] : [cat])];
 
   return (
-    <main className="pb-10">
-      <FormHeader title={edit ? "지출" : "지출 쓰기"} onSave={save} canSave={!!amt && !!title.trim()} busy={busy} />
-      <div className="px-5">
-        <div className="mt-3 flex justify-center gap-1.5">
-          {curs.map((c) => (
-            <button key={c} onClick={() => setCur(c)} className={`rounded-full px-3 py-1.5 text-[13px] font-bold ${cur === c ? "bg-char text-white" : "text-sub"}`}>
-              {sym(c).trim()} {c}
-            </button>
-          ))}
+    <section className={`screen on${shared ? " teampay" : ""}${edit ? " editmode" : ""}`} id="moneyAdd">
+      <div className="scr nonav">
+        <div className="hd">
+          <Go as="span" className="ib" back>
+            <Ic n="x" />
+          </Go>
+          <h2>{edit ? "지출 고치기" : "지출 쓰기"}</h2>
+          <span className={`txtbtn${busy || uploading ? " off" : ""}`} onClick={save}>
+            저장
+          </span>
         </div>
-        <div className="mt-2 flex items-center justify-center">
-          <span className="text-[38px] font-extrabold tracking-tight">{sym(cur).trim()}</span>
-          <input
-            className="w-[60%] bg-transparent text-center text-[38px] font-extrabold tracking-tight outline-none placeholder:text-sub2"
-            inputMode="decimal"
-            autoFocus={!edit}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-            placeholder="0"
-          />
-        </div>
-        {cur !== "KRW" && <div className="text-center text-[13px] text-sub">≈ {money(toKrw(amt, cur, trip), "")}원</div>}
-
-        <label className="flab">누가 냈나요?</label>
-        <div className="flex flex-wrap gap-1.5">
-          {hasShared && (
-            <button className={`chip flex items-center gap-1.5 ${shared ? "on" : ""}`} onClick={() => pickPayer("shared")}>
-              <Users size={15} /> 공동경비
-            </button>
-          )}
-          {members.map((m) => (
-            <button key={m.id} className={`chip flex items-center gap-1.5 ${payer === m.id ? "on" : ""}`} onClick={() => pickPayer(m.id)}>
-              <span className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white" style={{ background: m.color }}>
-                {m.nickname.slice(0, 1)}
-              </span>
-              {m.id === me ? "나" : m.nickname}
-            </button>
-          ))}
-        </div>
-
-        {myPockets.length > 0 && (
-          <>
-            <label className="flab">
-              어느 포켓에서요? {!shared && <span className="font-medium text-sub">선택</span>}
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {myPockets.map((p) => {
-                const I = POCKET_ICON[p.kind];
-                const u = pocketUse(p, expenses.filter((e) => e.id !== expense?.id));
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => pickPocket(p.id)}
-                    className={`flex items-center gap-2.5 rounded-2xl border-[1.5px] bg-white p-3 text-left ${pocketId === p.id ? "border-char" : "border-line"}`}
-                  >
-                    <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-sky-s text-sky-d">
-                      <I size={18} />
-                    </span>
-                    <span className="min-w-0">
-                      <b className="block truncate text-[14.5px]">{p.name}</b>
-                      <span className="block truncate text-[12px] text-sub">{money(u.left, sym(p.currency))} 남음</span>
-                    </span>
-                  </button>
-                );
-              })}
+        <div className="pad">
+          <div className="amt">
+            <div className="curtg">
+              {curs.map((c) => (
+                <span key={c} className={cur === c ? "on" : ""} onClick={() => setCur(c)}>
+                  {sym(c).trim()} {c}
+                </span>
+              ))}
             </div>
-          </>
-        )}
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", marginTop: 10 }}>
+              <b style={{ marginTop: 0 }}>{s}</b>
+              <input
+                inputMode="decimal"
+                autoFocus={!edit}
+                value={amount ? Number(amount.replace(/,/g, "")).toLocaleString("ko-KR") + (amount.endsWith(".") ? "." : "") : ""}
+                onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+                placeholder="0"
+                style={{ width: `${Math.max(1, (amount ? Number(amount).toLocaleString().length : 1)) + 0.5}ch`, border: 0, outline: 0, background: "none", fontSize: 44, fontWeight: 700, letterSpacing: "-1.5px", fontFamily: "inherit", color: "var(--ink)", textAlign: "left", padding: 0 }}
+              />
+            </div>
+            {cur !== "KRW" && <span className="sub">≈ {Math.round(toKrw(amt, cur, trip)).toLocaleString()}원</span>}
+          </div>
 
-        {shared ? (
-          <p className="mt-3 rounded-xl bg-sky-s px-4 py-3 text-[13.5px] font-semibold text-sky-d">공동 포켓에서 빠져요 · 정산 없음</p>
-        ) : (
-          members.length > 1 && (
-            <>
-              <label className="flab">누구 몫이에요?</label>
-              <div className="flex flex-wrap gap-1.5">
-                <button className={`chip ${split.length <= 1 ? "on" : ""}`} onClick={() => setSplit([])}>
-                  {payer === me ? "내 거" : `${who(payer)?.nickname ?? ""} 거`}
-                </button>
-                {members.map((m) => (
-                  <button
-                    key={m.id}
-                    className={`chip ${split.length > 1 && split.includes(m.id) ? "on" : ""}`}
-                    onClick={() => {
-                      const base = split.length > 1 ? split : [payer];
-                      const next = base.includes(m.id) ? base.filter((x) => x !== m.id) : [...base, m.id];
-                      setSplit(next.length > 1 ? next : []);
-                    }}
-                  >
-                    {m.nickname}
-                  </button>
-                ))}
-              </div>
-              {split.length > 1 && (
-                <p className="mt-2 text-[13px] text-sub">
-                  {split.length}명이 나눠요 · 1인 {money(toKrw(amt, cur, trip) / split.length, "₩")}
-                </p>
-              )}
-            </>
-          )
-        )}
-
-        <label className="flab">카테고리</label>
-        <div className="grid grid-cols-4 gap-2">
-          {EXP_CATS.map((c) => (
-            <button key={c.key} onClick={() => setCat(c.key)} className="flex flex-col items-center gap-1 text-[12.5px] font-semibold">
-              <span className={`grid h-12 w-12 place-items-center rounded-2xl ${cat === c.key ? "bg-char text-white" : "bg-white text-ink2"}`}>
-                <ExpIcon cat={c.key} />
+          <label className="flab">누가 냈나요?</label>
+          <div className="payer">
+            {hasShared && (
+              <span className={shared ? "on" : ""} onClick={() => pickPayer("shared")}>
+                <i className="team">
+                  <Ic n="users" />
+                </i>
+                공동경비
               </span>
-              <span className={cat === c.key ? "text-ink" : "text-sub"}>{c.key}</span>
-            </button>
-          ))}
+            )}
+            {members.map((m) => (
+              <span key={m.id} className={payer === m.id ? "on" : ""} onClick={() => pickPayer(m.id)}>
+                <i style={{ background: m.color }}>{m.nickname.slice(0, 1)}</i>
+                {m.id === me ? "나" : m.nickname}
+              </span>
+            ))}
+          </div>
+
+          {list.length > 0 && (
+            <>
+              <label className="flab">어느 포켓에서요?</label>
+              <div className="pkpick">
+                {list.map((p) => {
+                  const st = pkStyle(p);
+                  const u = pocketUse(p, others, topups);
+                  return (
+                    <div
+                      key={p.id}
+                      className={pocketId === p.id ? "on" : ""}
+                      onClick={() => {
+                        if (pocketId === p.id && !shared) return setPocketId("");
+                        setPocketId(p.id);
+                        setCur(p.currency);
+                      }}
+                    >
+                      <span className={`pk-ic ${st.c} sm`}>
+                        <Ic n={st.ic} />
+                      </span>
+                      <div>
+                        <b>{p.name}</b>
+                        <span>{u.total > 0 ? `${money(u.left, sym(p.currency))} 남음` : p.currency === "KRW" ? "원화" : p.currency}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {shared && <div className="teamnote">공동 포켓에서 빠져요 · 정산 없음</div>}
+
+          <label className="flab">카테고리</label>
+          <div className="catg six">
+            {showCats.map((k) => (
+              <div key={k} className={cat === k ? "on" : ""} onClick={() => setCat(k)}>
+                <Ic n={expCat(k).ic as IcName} />
+                <span>{k}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="form tight">
+            <div className="inp row">
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예) 이치란 라멘" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none" }} />
+              <span className="sub">내용</span>
+            </div>
+            <div className="inp row" onClick={() => setDp(true)} style={{ cursor: "pointer" }}>
+              <span>
+                <Ic n="calendar-days" /> {day === "pre" ? "준비 · 여행 전" : `${md(day)}${time ? ` ${time}` : ""}`}
+              </span>
+              <span className="sub">{day === "pre" ? "" : `DAY ${no}`}</span>
+            </div>
+          </div>
+          {days.length > 0 && (
+            <div className="chips flush" style={{ marginTop: 8 }}>
+              <span className={`chip${day === "pre" ? " on" : ""}`} onClick={() => setDay("pre")}>
+                준비
+              </span>
+              {days.map((x, i) => (
+                <span key={x} className={`chip${day === x ? " on" : ""}`} onClick={() => setDay(x)}>
+                  DAY {i + 1}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <label className="flab">
+            메모{" "}
+            <span className="sub" style={{ fontWeight: 500 }}>
+              선택
+            </span>
+          </label>
+          <textarea className="mp-memo big" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="예) 카드 안 돼서 현금으로 냄" rows={2} style={{ width: "100%", resize: "none", fontFamily: "inherit", display: "block" }} />
+
+          {!shared && members.length > 1 && (
+            <div className={`split${splitOn ? " on" : ""}`} id="split">
+              <div className="sp-row" onClick={() => setSplitOn(!splitOn)}>
+                <Ic n="users" />
+                <span>나눠 내기</span>
+                <i className={`sw${splitOn ? " on" : ""}`} />
+              </div>
+              <div className="sp-off">혼자 쓴 돈 · 정산 없음</div>
+              <div className="sp-on">
+                <div className="sp-lab">누구랑 나눠요?</div>
+                <div className="sp-mem">
+                  {members.map((m) => (
+                    <span key={m.id} className={spm.includes(m.id) ? "on" : ""} onClick={() => setSpm(spm.includes(m.id) ? spm.filter((x) => x !== m.id) : [...spm, m.id])}>
+                      <i style={{ background: m.color }}>{m.nickname.slice(0, 1)}</i>
+                      {m.nickname}
+                    </span>
+                  ))}
+                </div>
+                <div className="segm" style={{ marginTop: 10 }}>
+                  <span className={mode === "eq" ? "on" : ""} onClick={() => setMode("eq")}>
+                    똑같이
+                  </span>
+                  <span className={mode === "own" ? "on" : ""} onClick={() => setMode("own")}>
+                    직접 금액
+                  </span>
+                </div>
+                <div className="sp-list">
+                  {members
+                    .filter((m) => spm.includes(m.id))
+                    .map((m) => (
+                      <div key={m.id} className="sp-li">
+                        <i style={{ background: m.color }}>{m.nickname.slice(0, 1)}</i>
+                        <b>{m.nickname}</b>
+                        {mode === "eq" ? (
+                          <span className="v">{money(each, s)}</span>
+                        ) : (
+                          <span className="v" style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                            {s}
+                            <input inputMode="decimal" value={shares[m.id] ?? ""} onChange={(e) => setShares({ ...shares, [m.id]: e.target.value.replace(/[^\d.]/g, "") })} placeholder="0" style={{ width: 80, border: 0, borderBottom: "1.5px solid var(--line)", outline: 0, background: "none", textAlign: "right", fontWeight: 700, fontFamily: "inherit" }} />
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                </div>
+                <div className="sp-sum">
+                  {spm.length < 2 ? "나눌 사람을 두 명 이상 골라요" : mode === "eq" ? `${spm.length}명이 ${money(each, s)}씩` : ownSum === amt ? "금액이 맞아요" : `${money(amt - ownSum, s)} 남았어요`}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <label className="flab">
+            영수증 사진{" "}
+            <span className="sub" style={{ fontWeight: 500 }}>
+              선택
+            </span>
+          </label>
+          <div style={{ paddingBottom: 24 }}>
+            <PhotoField tripId={trip.id} value={photos} onChange={setPhotos} onBusy={setUploading} max={4} />
+          </div>
+
+          {edit && (
+            <div className="dellink" id="maDel" onClick={remove}>
+              <Ic n="trash" /> 지출 삭제
+            </div>
+          )}
         </div>
-
-        <label className="flab">내용</label>
-        <input className="inp" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예) 이치란 라멘" />
-
-        <label className="flab">언제</label>
-        <div className="flex flex-wrap gap-1.5">
-          <button className={`chip ${day === "pre" ? "on" : ""}`} onClick={() => setDay("pre")}>
-            준비 · 여행 전
-          </button>
-          {days.map((d, i) => (
-            <button key={d} className={`chip ${day === d ? "on" : ""}`} onClick={() => setDay(d)}>
-              DAY {i + 1} · {md(d)}
-            </button>
-          ))}
-        </div>
-        {day !== "pre" && <input className="inp mt-2" value={time} onChange={(e) => setTime(e.target.value)} placeholder="시간 예) 13:05" inputMode="numeric" />}
-
-        <label className="flab">
-          메모 <span className="font-medium text-sub">선택</span>
-        </label>
-        <input className="inp" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="예) 카드 안 돼서 현금으로 냄" />
-
-        {pocket && pocket.currency !== cur && <p className="mt-3 text-[12.5px] text-red">포켓 통화({pocket.currency})와 달라서 포켓 잔액에는 안 들어가요</p>}
-
-        {edit && (
-          <button className="dellink w-full" onClick={remove}>
-            <Trash2 size={16} /> 지출 삭제
-          </button>
-        )}
       </div>
-    </main>
+      <DatePick
+        open={dp}
+        onClose={() => setDp(false)}
+        mode="single"
+        a={day !== "pre" ? day : days[0] ?? null}
+        time={time}
+        withTime
+        onDone={(a, _b, t) => {
+          setDay(a && days.includes(a) ? a : "pre");
+          setTime(t);
+        }}
+      />
+    </section>
   );
 }

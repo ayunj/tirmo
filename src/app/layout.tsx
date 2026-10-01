@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "flag-icons/css/flag-icons.min.css";
-import "./globals.css";
+import "./mock.css";
+import "./app.css";
+import Overlay from "@/components/ui/Overlay";
 
 export const metadata: Metadata = {
   title: "트리모",
@@ -20,8 +22,17 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <body className="antialiased">
-        <div className="app">{children}</div>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
+      </head>
+      <body>
+        <div className="ph" id="ph">
+          {children}
+          <Overlay />
+        </div>
       </body>
     </html>
   );

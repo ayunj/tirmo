@@ -1,9 +1,7 @@
-import { Cloud, CloudRain, CloudSun, Snowflake, Sun } from "lucide-react";
+import Ic from "@/components/Ic";
+import { weather } from "@/lib/diary";
 
-const W = { sun: Sun, partly: CloudSun, cloud: Cloud, rain: CloudRain, snow: Snowflake } as const;
-
-export default function WeatherIcon({ w, size = 18 }: { w: string | null; size?: number }) {
-  if (!w) return null;
-  const I = W[w as keyof typeof W];
-  return I ? <I size={size} /> : null;
+export default function WeatherIcon({ w }: { w: string | null; size?: number }) {
+  const x = weather(w);
+  return x ? <Ic n={x.ic} /> : null;
 }

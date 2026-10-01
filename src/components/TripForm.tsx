@@ -2,262 +2,524 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Car, Plane, Search, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { CITY_GROUPS, COUNTRIES, COVER_COLORS, CURRENCIES } from "@/lib/places";
+import { CITY_GROUPS, COUNTRIES, CURRENCIES } from "@/lib/places";
+import { COVERS, coverDate, coverPair } from "@/lib/cover";
+import { uploadPhoto } from "@/lib/photo";
+import { askDel, toast } from "@/lib/ui";
+import Go from "@/components/Go";
+import Ic from "@/components/Ic";
+import { Names } from "@/components/TripFlags";
+import Sheet from "@/components/ui/Sheet";
+import DatePick from "@/components/ui/DatePick";
 import type { Trip } from "@/lib/types";
-import { coverStyle } from "./bits";
 
-type Props = { trip?: Trip };
+const WK = ["일", "월", "화", "수", "목", "금", "토"];
+const fmtFull = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return `${y}.${String(m).padStart(2, "0")}.${String(d).padStart(2, "0")} (${WK[new Date(y, m - 1, d).getDay()]})`;
+};
+const fmtShort = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return `${m}.${d} (${WK[new Date(y, m - 1, d).getDay()]})`;
+};
+const REGIONS = [
+  ["asia", "아시아"],
+  ["europe", "유럽"],
+  ["america", "아메리카"],
+  ["etc", "기타"],
+] as const;
 
-export default function TripForm({ trip }: Props) {
+type Props = {
+  trip?: Trip;
+  members?: { nickname: string; color: string }[];
+  recentCountries?: string[];
+  recentCities?: string[];
+};
+
+export default function TripForm({ trip, members = [], recentCountries = [], recentCities = [] }: Props) {
   const router = useRouter();
   const edit = !!trip;
   const [title, setTitle] = useState(trip?.title ?? "");
-  const [color, setColor] = useState(trip?.cover_color ?? COVER_COLORS[0]);
+  const [color, setColor] = useState(coverPair(trip?.cover_color)[0]);
+  const [mode, setMode] = useState<"color" | "photo">(trip?.cover_photo ? "photo" : "color");
+  const [photo] = useState<string | null>(trip?.cover_photo ?? null);
+  const [file, setFile] = useState<File | null>(null);
   const [kind, setKind] = useState<"abroad" | "domestic">(trip?.kind ?? "abroad");
-  const [countries, setCountries] = useState<string[]>(trip?.countries ?? []);
+  const [countries, setCountries] = useState<string[]>(trip?.kind === "domestic" ? [] : trip?.countries ?? []);
   const [cities, setCities] = useState<string[]>(trip?.cities ?? []);
-  const [start, setStart] = useState(trip?.start_date ?? "");
-  const [end, setEnd] = useState(trip?.end_date ?? "");
-  const [cur, setCur] = useState(trip?.currency ?? "JPY");
-  const [rate, setRate] = useState(String(trip?.rate ?? CURRENCIES.JPY.rate));
+  const [start, setStart] = useState<string | null>(trip?.start_date ?? null);
+  const [end, setEnd] = useState<string | null>(trip?.end_date ?? null);
+  const [cur, setCur] = useState(trip?.currency && trip.currency !== "KRW" ? trip.currency : "JPY");
+  const [rate, setRate] = useState(String(trip && trip.currency !== "KRW" ? trip.rate : CURRENCIES.JPY.rate));
   const [rateEdit, setRateEdit] = useState(false);
-  const [q, setQ] = useState("");
-  const [cityQ, setCityQ] = useState("");
+  const [sheet, setSheet] = useState<"" | "place" | "date" | "cur">("");
   const [busy, setBusy] = useState(false);
 
-  const currency = CURRENCIES[cur] ?? CURRENCIES.KRW;
+  // 장소 창
+  const [ab, setAb] = useState<"out" | "dom">(kind === "domestic" ? "dom" : "out");
+  const [rg, setRg] = useState<string>("asia");
+  const [q, setQ] = useState("");
+  const [cq, setCq] = useState("");
+  const [mine, setMine] = useState<string[]>((trip?.cities ?? []).filter((c) => !CITY_GROUPS.some((g) => g.cities.includes(c))));
+
+  const c = CURRENCIES[cur] ?? CURRENCIES.JPY;
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : photo), [file, photo]);
   const found = useMemo(() => {
     const v = q.trim().toLowerCase();
-    if (!v) return COUNTRIES;
-    return COUNTRIES.filter((c) => c.name.includes(v) || c.en.toLowerCase().includes(v));
+    return v ? COUNTRIES.filter((x) => x.name.includes(v) || x.en.toLowerCase().includes(v) || x.cur.toLowerCase().includes(v)) : [];
   }, [q]);
 
   function toggleCountry(code: string) {
-    const nextList = countries.includes(code) ? countries.filter((c) => c !== code) : [...countries, code];
-    setCountries(nextList);
-    // 첫 나라의 통화로 맞춰요
-    const first = COUNTRIES.find((c) => c.code === nextList[0]);
+    const next = countries.includes(code) ? countries.filter((x) => x !== code) : [...countries, code];
+    setCountries(next);
+    const first = COUNTRIES.find((x) => x.code === next[0]);
     if (first && CURRENCIES[first.cur] && first.cur !== cur) {
       setCur(first.cur);
       setRate(String(CURRENCIES[first.cur].rate));
       setRateEdit(false);
     }
   }
-  function toggleCity(c: string) {
-    setCities(cities.includes(c) ? cities.filter((x) => x !== c) : [...cities, c]);
-  }
+  const toggleCity = (x: string) => setCities(cities.includes(x) ? cities.filter((y) => y !== x) : [...cities, x]);
 
-  const ok = title.trim() && (kind === "domestic" ? cities.length : countries.length);
+  const domestic = ab === "dom";
+  const ok = !!title.trim() && (domestic ? cities.length > 0 : countries.length > 0);
+  const nights = start && end ? Math.round((new Date(end).getTime() - new Date(start).getTime()) / 864e5) : 0;
+  const pairStyle = { "--cv1": coverPair(color)[0], "--cv2": coverPair(color)[1] } as React.CSSProperties;
 
   async function save() {
-    if (!ok) return;
-    setBusy(true);
-    const supabase = createClient();
-    const domestic = kind === "domestic";
-    const payload = {
-      title: title.trim(),
-      start: start || null,
-      end: end || start || null,
-      kind,
-      countries: domestic ? ["kr"] : countries,
-      cities: domestic ? cities : [],
-      color,
-      currency: domestic ? "KRW" : cur,
-      unit: domestic ? 1 : currency.unit,
-      rate: domestic ? 1 : Number(rate.replace(/,/g, "")) || currency.rate,
-    };
-    if (edit) {
-      const { error } = await supabase
-        .from("trips")
-        .update({
-          title: payload.title,
-          start_date: payload.start,
-          end_date: payload.end,
-          kind,
-          countries: payload.countries,
-          cities: payload.cities,
-          cover_color: color,
-          currency: payload.currency,
-          rate_unit: payload.unit,
-          rate: payload.rate,
-        })
-        .eq("id", trip!.id);
-      setBusy(false);
-      if (error) return alert("저장하지 못했어요");
-      router.push(`/trips/${trip!.id}`);
-      router.refresh();
+    if (!ok) {
+      if (!title.trim()) toast("여행 이름을 적어 주세요");
+      else toast(domestic ? "도시를 골라 주세요" : "나라를 골라 주세요");
       return;
     }
-    const { data, error } = await supabase.rpc("create_trip", {
-      p_title: payload.title,
-      p_start: payload.start,
-      p_end: payload.end,
-      p_kind: kind,
-      p_countries: payload.countries,
-      p_cities: payload.cities,
-      p_cover_color: color,
-      p_currency: payload.currency,
-      p_rate_unit: payload.unit,
-      p_rate: payload.rate,
-    });
-    setBusy(false);
-    if (error || !data) return alert("여행을 만들지 못했어요");
-    router.replace(`/trips/${data}`);
+    setBusy(true);
+    const supabase = createClient();
+    const rateN = Number(rate.replace(/,/g, "")) || c.rate;
+    const row = {
+      title: title.trim(),
+      start_date: start,
+      end_date: end || start,
+      kind: domestic ? "domestic" : "abroad",
+      countries: domestic ? ["kr"] : countries,
+      cities: domestic ? cities : [],
+      cover_color: color,
+      currency: domestic ? "KRW" : cur,
+      rate_unit: domestic ? 1 : c.unit,
+      rate: domestic ? 1 : rateN,
+    };
+    let id = trip?.id;
+    if (edit) {
+      const { error } = await supabase.from("trips").update(row).eq("id", id!);
+      if (error) return fail();
+    } else {
+      const { data, error } = await supabase.rpc("create_trip", {
+        p_title: row.title,
+        p_start: row.start_date,
+        p_end: row.end_date,
+        p_kind: row.kind,
+        p_countries: row.countries,
+        p_cities: row.cities,
+        p_cover_color: row.cover_color,
+        p_currency: row.currency,
+        p_rate_unit: row.rate_unit,
+        p_rate: row.rate,
+      });
+      if (error || !data) return fail();
+      id = data as string;
+    }
+    // 커버 사진
+    let cover = mode === "photo" ? photo : null;
+    if (mode === "photo" && file) {
+      try {
+        cover = await uploadPhoto(id!, file);
+      } catch {
+        toast("사진을 올리지 못했어요");
+      }
+    }
+    if (cover !== (trip?.cover_photo ?? null)) await supabase.from("trips").update({ cover_photo: cover }).eq("id", id!);
+    router.replace(`/trips/${id}`);
     router.refresh();
+  }
+  function fail() {
+    setBusy(false);
+    toast("저장하지 못했어요");
   }
 
   async function remove() {
-    if (!trip || !confirm("이 여행을 지울까요?\n일정, 예약, 경비, 기록이 모두 지워지고 되돌릴 수 없어요.")) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("trips").delete().eq("id", trip.id);
-    if (error) return alert("방장만 여행을 지울 수 있어요");
+    if (!trip || !(await askDel("이 여행을 지울까요?", "일정, 예약, 경비, 기록이 모두 지워지고 되돌릴 수 없어요"))) return;
+    const { error } = await createClient().from("trips").delete().eq("id", trip.id);
+    if (error) return toast("방장만 지울 수 있어요");
+    toast("여행을 지웠어요");
     router.replace("/");
     router.refresh();
   }
 
+  const destLabel = domestic ? (cities.length > 3 ? `${cities.slice(0, 3).join(", ")} 외 ${cities.length - 3}` : cities.join(", ")) : countries.map((x) => COUNTRIES.find((y) => y.code === x)?.name).join(", ");
+  const recentC = (recentCountries.length ? recentCountries : ["jp", "th"]).slice(0, 4);
+
   return (
-    <main className="pb-16">
-      <header className="hd">
-        <button className="ib" onClick={() => router.back()} aria-label="닫기">
-          <X size={22} />
-        </button>
-        <h1>{edit ? "여행 정보 수정" : "새 여행"}</h1>
-        <button className="px-1 text-[15px] font-bold text-sky-d disabled:text-sub2" disabled={!ok || busy} onClick={save}>
-          {edit ? "저장" : "만들기"}
-        </button>
-      </header>
-
-      <div className="px-5">
-        <div className="mt-3 flex h-[150px] flex-col items-center justify-center rounded-[20px] px-6 text-center text-white" style={coverStyle({ cover_color: color, cover_photo: null })}>
-          <div className="text-[24px] font-extrabold tracking-tight">{title || "여행 이름"}</div>
-          {start && <div className="mt-1 text-[13px] opacity-90">{start.replace(/-/g, ". ")}{end && end !== start ? ` — ${end.slice(5).replace("-", ". ")}` : ""}</div>}
+    <section className={`screen on${edit ? " editmode" : ""}`} id="tripAdd">
+      <div className="scr nonav">
+        <div className="hd">
+          <Go as="span" className="ib" back>
+            <Ic n="x" />
+          </Go>
+          <h2>{edit ? "여행 정보 수정" : "새 여행"}</h2>
+          <span className={`txtbtn${busy ? " off" : ""}`} onClick={save}>
+            {busy ? "저장 중" : edit ? "저장" : "만들기"}
+          </span>
         </div>
-        <div className="mt-4 flex justify-between">
-          {COVER_COLORS.map((c) => (
-            <button key={c} aria-label={c} onClick={() => setColor(c)} className="h-9 w-9 rounded-full" style={{ background: c, boxShadow: c === color ? "0 0 0 2px #F2F4F6, 0 0 0 4px #191F28" : undefined }} />
-          ))}
+        <div className="pad">
+          <div className="coverpick colorcv" style={pairStyle}>
+            {mode === "photo" && preview && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="im" src={preview} alt="" style={{ position: "absolute", inset: 0 }} />
+            )}
+            <div className="cc">
+              <div className="disp cc-t" style={{ fontSize: 26 }}>
+                {title || "여행 이름"}
+              </div>
+              <div className="cc-d">{coverDate(start, end)}</div>
+            </div>
+          </div>
+          <div className="cvmode">
+            <div className={mode === "color" ? "on" : ""} onClick={() => setMode("color")}>
+              <Ic n="palette" /> 색상
+            </div>
+            <label className={mode === "photo" ? "on" : ""} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 0", borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: "pointer", color: mode === "photo" ? "var(--ink)" : "var(--sub)", background: mode === "photo" ? "var(--card)" : "none" }}>
+              <Ic n="image" /> 사진 올리기
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    setFile(f);
+                    setMode("photo");
+                  }
+                }}
+              />
+            </label>
+          </div>
+          {mode === "color" && (
+            <div className="swatches">
+              {COVERS.map(([a, b]) => (
+                <i key={a} className={color === a ? "on" : ""} style={{ "--c1": a, "--c2": b } as React.CSSProperties} onClick={() => setColor(a)} />
+              ))}
+            </div>
+          )}
+          <div className="form">
+            <label>
+              여행 이름 <span className="sub">커버 가운데에 크게 들어가요</span>
+            </label>
+            <input className="inp" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예) 세자매 후쿠오카 여행" maxLength={30} />
+            <label>어디로 가요?</label>
+            <div className="inp row" onClick={() => setSheet("place")} style={{ cursor: "pointer" }}>
+              <span className="dest">
+                {domestic ? (
+                  cities.length ? (
+                    <>
+                      <Ic n="map-pin" className="dpin" />
+                      <span className="dn">{destLabel}</span>
+                    </>
+                  ) : (
+                    <span className="sub">도시 고르기</span>
+                  )
+                ) : countries.length ? (
+                  <>
+                    {countries.slice(0, 3).map((x) => (
+                      <span key={x} className={`fi fi-${x} fis flag`} />
+                    ))}
+                    <span className="dn">{destLabel}</span>
+                  </>
+                ) : (
+                  <span className="sub">나라 고르기</span>
+                )}
+              </span>
+              <Ic n="chevron-right" />
+            </div>
+            <label>날짜</label>
+            <div className="inp row" onClick={() => setSheet("date")} style={{ cursor: "pointer" }}>
+              <span>{start ? `${fmtFull(start)}${end && end !== start ? ` – ${fmtShort(end)}` : ""}` : <span className="sub">날짜 고르기</span>}</span>
+              <span className="sub">{start ? (nights > 0 ? `${nights}박 ${nights + 1}일` : "당일") : ""}</span>
+            </div>
+            <label>함께 가는 사람</label>
+            <div className="inp row">
+              <Names list={members} />
+              {edit ? (
+                <Go as="span" className="link" href={`/trips/${trip!.id}/invite`}>
+                  <Ic n="link" /> 초대 링크 보내기
+                </Go>
+              ) : (
+                <span className="link" onClick={() => toast("여행을 만든 뒤 초대 링크를 보낼 수 있어요")}>
+                  <Ic n="link" /> 초대 링크 보내기
+                </span>
+              )}
+            </div>
+            {!domestic && (
+              <>
+                <label className="curlab">여행 통화</label>
+                <div className="inp row curRow" onClick={() => setSheet("cur")} style={{ cursor: "pointer" }}>
+                  <span id="curTxt">
+                    <span className={`fi fi-${COUNTRIES.find((x) => x.cur === cur)?.code ?? (cur === "EUR" ? "eu" : "un")} fis flag`} /> {cur} {c.name} · {c.sym.trim()}
+                    {c.unit.toLocaleString()} = ₩{Number(rate.replace(/,/g, "") || 0).toLocaleString()}
+                  </span>
+                  <Ic n="chevron-right" />
+                </div>
+              </>
+            )}
+          </div>
+          {edit && (
+            <div className="dellink" onClick={remove}>
+              <Ic n="trash" /> 여행 삭제
+            </div>
+          )}
         </div>
+      </div>
 
-        <label className="flab">여행 이름</label>
-        <input className="inp" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예) 세자매 후쿠오카 여행" />
+      <DatePick
+        open={sheet === "date"}
+        onClose={() => setSheet("")}
+        mode="range"
+        a={start}
+        b={end}
+        onDone={(a, b) => {
+          setStart(a);
+          setEnd(b);
+        }}
+      />
 
-        <label className="flab">날짜</label>
-        <div className="flex items-center gap-2">
-          <input type="date" className="inp" value={start} onChange={(e) => { setStart(e.target.value); if (!end || end < e.target.value) setEnd(e.target.value); }} />
-          <span className="text-sub">–</span>
-          <input type="date" className="inp" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
+      <Sheet open={sheet === "place"} onClose={() => setSheet("")} title="어디로 가요?" id="placePick">
+        <div className="segm abseg" id="abSeg" style={{ marginTop: 12 }}>
+          <span className={ab === "out" ? "on" : ""} onClick={() => setAb("out")}>
+            <Ic n="plane" /> 해외여행
+          </span>
+          <span className={ab === "dom" ? "on" : ""} onClick={() => setAb("dom")}>
+            <Ic n="car" /> 국내여행
+          </span>
         </div>
-
-        <label className="flab">어디로 가요?</label>
-        <div className="flex rounded-[14px] bg-line/60 p-1">
-          {(["abroad", "domestic"] as const).map((k) => (
-            <button key={k} onClick={() => setKind(k)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2.5 text-sm font-bold ${kind === k ? "bg-white text-ink shadow-sm" : "text-sub"}`}>
-              {k === "abroad" ? <Plane size={16} /> : <Car size={16} />}
-              {k === "abroad" ? "해외여행" : "국내여행"}
-            </button>
-          ))}
-        </div>
-
-        {kind === "abroad" ? (
-          <>
-            {countries.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {countries.map((c) => {
-                  const it = COUNTRIES.find((x) => x.code === c);
-                  return (
-                    <button key={c} onClick={() => toggleCountry(c)} className="flex items-center gap-1.5 rounded-full bg-char py-1.5 pl-2 pr-3 text-[13px] font-bold text-white">
-                      <span className={`flag fi fi-${c}`} style={{ width: 16, height: 12 }} />
-                      {it?.name} ✕
-                    </button>
-                  );
-                })}
+        <div className={`abpane${ab === "out" ? " on" : ""}`}>
+          <div className={`pane on${q ? " searching" : ""}`}>
+            <div className="sbox sin" style={{ marginTop: 12 }}>
+              <Ic n="search" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="나라 검색 (한글 · 영어)" autoComplete="off" />
+              <i className="sx" onClick={() => setQ("")}>
+                <Ic n="x" />
+              </i>
+            </div>
+            {q && found.length === 0 && (
+              <div className="noresult" style={{ display: "block" }}>
+                찾는 나라가 없어요
               </div>
             )}
-            <div className="inp mt-3 flex items-center gap-2 !py-3">
-              <Search size={17} className="text-sub" />
-              <input className="flex-1 bg-transparent outline-none" placeholder="나라 검색 (한글 · 영어)" value={q} onChange={(e) => setQ(e.target.value)} />
-            </div>
-            <div className="card mt-2 max-h-[260px] overflow-y-auto px-2">
-              {found.map((c) => (
-                <button key={c.code} onClick={() => toggleCountry(c.code)} className="flex w-full items-center gap-3 border-b border-line px-2 py-2.5 text-left last:border-0">
-                  <span className={`flag fi fi-${c.code}`} style={{ width: 22, height: 16 }} />
-                  <span className="flex-1 text-[15px] font-semibold">{c.name} <span className="text-xs font-normal text-sub">{c.en}</span></span>
-                  <span className={`h-5 w-5 rounded-md border-2 ${countries.includes(c.code) ? "border-char bg-char" : "border-line"}`} />
-                </button>
-              ))}
-              {found.length === 0 && <p className="py-6 text-center text-sm text-sub">찾는 나라가 없어요</p>}
-            </div>
-
-            <label className="flab">여행 통화 · 환율</label>
-            <div className="flex flex-wrap gap-1.5">
-              {Array.from(new Set(countries.map((c) => COUNTRIES.find((x) => x.code === c)?.cur).filter(Boolean) as string[])).map((code) => (
-                <button key={code} className={`chip ${code === cur ? "on" : ""}`} onClick={() => { setCur(code); setRate(String(CURRENCIES[code]?.rate ?? 1)); setRateEdit(false); }}>
-                  {code} {CURRENCIES[code]?.name}
-                </button>
+            <div className="selw">
+              {countries.map((x) => (
+                <span key={x} className="selc">
+                  <span className={`fi fi-${x} fis flag`} />
+                  <span>{COUNTRIES.find((y) => y.code === x)?.name}</span>
+                  <i onClick={() => toggleCountry(x)}>✕</i>
+                </span>
               ))}
             </div>
-            <div className={`inp mt-2 flex items-center ${rateEdit ? "!border-sky" : ""}`}>
-              <span className="flex-1 font-semibold">{currency.sym}{currency.unit.toLocaleString()} =</span>
-              <span className="font-bold">₩</span>
-              <input
-                className={`w-24 bg-transparent text-right font-bold outline-none ${rateEdit ? "border-b-2 border-sky" : ""}`}
-                inputMode="decimal"
-                readOnly={!rateEdit}
-                value={rate}
-                onChange={(e) => setRate(e.target.value.replace(/[^\d.,]/g, ""))}
-              />
+            <label className="flab">최근 간 나라</label>
+            <div className="ctry">
+              {recentC.map((x) => (
+                <div key={x} className={countries.includes(x) ? "on" : ""} onClick={() => toggleCountry(x)}>
+                  <span className={`fi fi-${x} fis flag`} />
+                  <b>{COUNTRIES.find((y) => y.code === x)?.name}</b>
+                </div>
+              ))}
             </div>
-            <button className="mt-2 text-[13px] font-semibold text-sky-d" onClick={() => setRateEdit(!rateEdit)}>
-              {rateEdit ? "직접 입력 끝내기" : "환율 직접 입력"}
-            </button>
-          </>
-        ) : (
-          <>
-            {cities.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {cities.map((c) => (
-                  <button key={c} onClick={() => toggleCity(c)} className="rounded-full bg-char px-3 py-1.5 text-[13px] font-bold text-white">
-                    {c} ✕
-                  </button>
+            <label className="flab">
+              전체 나라{" "}
+              <span className="sub" style={{ fontWeight: 500 }}>
+                여러 나라 고를 수 있어요
+              </span>
+            </label>
+            <div className="segm four">
+              {REGIONS.map(([k, l]) => (
+                <span key={k} className={rg === k ? "on" : ""} onClick={() => setRg(k)}>
+                  {l}
+                </span>
+              ))}
+            </div>
+            <div className="pane on">
+              <div className="curl mc">
+                {(q ? found : COUNTRIES.filter((x) => x.region === rg)).map((x) => (
+                  <div key={x.code} className={countries.includes(x.code) ? "on" : ""} onClick={() => toggleCountry(x.code)}>
+                    <span className={`fi fi-${x.code} fis flag`} />
+                    <div className="mid">
+                      <b>{x.name}</b>
+                      <span>
+                        {x.en} · {x.cur}
+                      </span>
+                    </div>
+                    <i className="ck" />
+                  </div>
                 ))}
               </div>
-            )}
-            <div className="inp mt-3 flex items-center gap-2 !py-3">
-              <Search size={17} className="text-sub" />
-              <input className="flex-1 bg-transparent outline-none" placeholder="도시 검색" value={cityQ} onChange={(e) => setCityQ(e.target.value)} />
             </div>
-            {cityQ.trim() && !CITY_GROUPS.some((g) => g.cities.includes(cityQ.trim())) && (
-              <button onClick={() => { toggleCity(cityQ.trim()); setCityQ(""); }} className="mt-2 rounded-full border-[1.5px] border-dashed border-sky px-3.5 py-2 text-[13px] font-bold text-sky-d">
-                + &apos;{cityQ.trim()}&apos; 직접 추가
-              </button>
+          </div>
+        </div>
+        <div className={`abpane${ab === "dom" ? " on" : ""}${cq ? " searching" : ""}`}>
+          <div className="sbox sin" style={{ marginTop: 12 }}>
+            <Ic n="search" />
+            <input value={cq} onChange={(e) => setCq(e.target.value)} placeholder="도시 검색" autoComplete="off" />
+            <i className="sx" onClick={() => setCq("")}>
+              <Ic n="x" />
+            </i>
+          </div>
+          <div className="cities cadd">
+            {cq.trim() && ![...CITY_GROUPS.flatMap((g) => g.cities), ...mine].includes(cq.trim()) && (
+              <span
+                className="addc"
+                onClick={() => {
+                  const n = cq.trim();
+                  setMine([...mine, n]);
+                  setCities([...cities, n]);
+                  setCq("");
+                  toast(`${n} 추가했어요`);
+                }}
+              >
+                <Ic n="plus" /> &apos;{cq.trim()}&apos; 직접 추가
+              </span>
             )}
-            {CITY_GROUPS.map((g) => {
-              const list = g.cities.filter((c) => !cityQ.trim() || c.includes(cityQ.trim()));
-              if (!list.length) return null;
+          </div>
+          <div className="selw">
+            {cities.map((x) => (
+              <span key={x} className="selc">
+                <span>{x}</span>
+                <i onClick={() => toggleCity(x)}>✕</i>
+              </span>
+            ))}
+          </div>
+          {recentCities.length > 0 && (
+            <>
+              <label className="flab">최근 간 곳</label>
+              <div className="cities">
+                {recentCities.slice(0, 6).map((x) => (
+                  <span key={x} className={cities.includes(x) ? "on" : ""} onClick={() => toggleCity(x)}>
+                    {x}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+          <label className="flab">
+            전체{" "}
+            <span className="sub" style={{ fontWeight: 500 }}>
+              여러 도시 고를 수 있어요
+            </span>
+          </label>
+          {[...(mine.length ? [{ region: "직접 추가", cities: mine }] : []), ...CITY_GROUPS].map((g) => {
+            const list = g.cities.filter((x) => !cq.trim() || x.includes(cq.trim()));
+            if (!list.length) return null;
+            return (
+              <div key={g.region} className="cgrp">
+                <em>{g.region}</em>
+                <div className="cities">
+                  {list.map((x) => (
+                    <span key={x} className={cities.includes(x) ? "on" : ""} onClick={() => toggleCity(x)}>
+                      {x}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div
+          className="bigbtn"
+          onClick={() => {
+            setKind(ab === "dom" ? "domestic" : "abroad");
+            setSheet("");
+          }}
+        >
+          완료
+        </div>
+      </Sheet>
+
+      <Sheet open={sheet === "cur"} onClose={() => setSheet("")} title="여행 통화" id="curPick">
+        <div className="curl">
+          {Object.values(CURRENCIES)
+            .filter((x) => x.code !== "KRW")
+            .map((x) => {
+              const code = COUNTRIES.find((y) => y.cur === x.code)?.code ?? (x.code === "EUR" ? "eu" : "un");
               return (
-                <div key={g.region} className="mt-3">
-                  <div className="mb-1.5 text-xs font-bold text-sub">{g.region}</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {list.map((c) => (
-                      <button key={c} onClick={() => toggleCity(c)} className={`chip ${cities.includes(c) ? "!border-sky !bg-sky-s !text-sky-d" : ""}`}>
-                        {c}
-                      </button>
-                    ))}
+                <div
+                  key={x.code}
+                  className={cur === x.code ? "on" : ""}
+                  onClick={() => {
+                    setCur(x.code);
+                    setRate(String(x.rate));
+                    setRateEdit(false);
+                  }}
+                >
+                  <span className="flw">
+                    <span className={`fi fi-${code} fis flag`} />
+                  </span>
+                  <div className="mid">
+                    <b>{x.name}</b>
+                    <span>
+                      {x.code} · {x.sym.trim()}
+                    </span>
                   </div>
+                  <em>
+                    {x.sym.trim()}
+                    {x.unit.toLocaleString()} = ₩{x.rate.toLocaleString()}
+                  </em>
+                  <i className="rdo" />
                 </div>
               );
             })}
-          </>
+        </div>
+        <label className="flab">환율</label>
+        <div className="segm">
+          <span
+            className={!rateEdit ? "on" : ""}
+            onClick={() => {
+              setRateEdit(false);
+              setRate(String(c.rate));
+            }}
+          >
+            기본 환율
+          </span>
+          <span className={rateEdit ? "on" : ""} onClick={() => setRateEdit(true)}>
+            직접 입력
+          </span>
+        </div>
+        <div className={`inp row tin${rateEdit ? " edit" : ""}`} id="rateRow" style={{ marginTop: 10 }}>
+          <span id="rateL">
+            {c.sym.trim()}
+            {c.unit.toLocaleString()} =
+          </span>
+          <span className="rr">
+            ₩
+            {rateEdit ? (
+              <input
+                id="rateV"
+                autoFocus
+                inputMode="decimal"
+                value={rate}
+                onChange={(e) => setRate(e.target.value.replace(/[^\d.,]/g, ""))}
+                style={{ border: 0, outline: 0, background: "none", width: `${Math.max(2, rate.length) + 1}ch`, font: "inherit", fontWeight: 700, borderBottom: "2px solid var(--brand)" }}
+              />
+            ) : (
+              <b id="rateV">{Number(rate.replace(/,/g, "") || 0).toLocaleString()}</b>
+            )}
+          </span>
+        </div>
+        {rateEdit && (
+          <div className="sub" style={{ marginTop: 6 }}>
+            원화 금액만 고쳐요
+          </div>
         )}
-
-        {edit && (
-          <button className="dellink w-full" onClick={remove}>
-            <Trash2 size={16} /> 여행 삭제
-          </button>
-        )}
-      </div>
-    </main>
+        <div className="bigbtn" onClick={() => setSheet("")}>
+          완료
+        </div>
+      </Sheet>
+    </section>
   );
 }

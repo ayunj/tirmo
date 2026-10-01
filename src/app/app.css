@@ -1,0 +1,28 @@
+/* ===== 실제 앱용 덧붙임 (목업 CSS 다음에 읽어요) ===== */
+html,body{height:100%}
+body{padding:0;display:block;background:var(--bg)}
+.ph{width:100%;max-width:480px;height:100dvh;margin:0 auto;border:0;border-radius:0;box-shadow:none}
+@media (min-width:520px){body{background:var(--page)}.ph{box-shadow:0 0 0 1px var(--line)}}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit}
+input,textarea,select{font:inherit;color:inherit}
+
+/* 아래 탭: 목업 div 대신 링크 */
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:#9DA1A8;width:56px;cursor:pointer}
+.nav a.on{color:var(--ink);font-weight:700}
+.nav a svg{font-size:24px}
+
+/* 실제 입력 칸 (목업 .inp 모양 그대로) */
+input.inp,textarea.inp{width:100%;display:block;outline:none;appearance:none}
+textarea.inp{resize:none;line-height:1.6}
+.inp:focus,.inp:focus-within{border-color:var(--deep)}
+.inp::placeholder{color:#A9AEB5}
+.txtbtn.off{color:#B8BDC4;pointer-events:none}
+.memo,.s{white-space:pre-line}
+.tedit::placeholder,.mp-t::placeholder,.mp-memo::placeholder{font-weight:400;color:var(--sub)}
+.ec.violet{background:var(--violet-s);color:var(--violet)}
+.ec.green{background:var(--green-s);color:var(--green)}
+.pk-ic.blue{background:var(--blue-s);color:var(--blue)}
+.qsheet .inp:not(.tin){background:var(--card);border-radius:14px;padding:14px 15px;font-size:14.5px;border:1px solid var(--line)}
+.qsheet .inp.row{display:flex}
+.wtitle::placeholder{color:#B3B8C0}.wtext::placeholder{color:#ACB0B7}

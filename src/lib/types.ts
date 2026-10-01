@@ -25,6 +25,7 @@ export type Trip = {
 export type Member = {
   user_id: string;
   role: "owner" | "editor" | "viewer";
+  joined_at?: string;
   profiles: Pick<Profile, "nickname" | "color"> | null;
 };
 
@@ -85,9 +86,12 @@ export type Expense = {
   day: string | null;
   time_text: string | null;
   memo: string | null;
-  split: { members: string[] } | null;
+  split: { members: string[]; mode?: "eq" | "own"; shares?: Record<string, number> } | null;
   booking_id: string | null;
+  photos?: string[];
 };
+
+export type Topup = { id: string; trip_id: string; pocket_id: string; amount: number; how: string | null; day: string | null; rate_text: string | null; krw: number | null; memo: string | null; created_at: string };
 
 export type Transfer = { id: string; trip_id: string; from_id: string; to_id: string; amount: number; created_at: string };
 
@@ -97,6 +101,7 @@ export type PackItem = {
   category: string;
   name: string;
   done: boolean;
+  pinned: boolean;
   assignee: string | null;
   booking_id: string | null;
   memo: string | null;

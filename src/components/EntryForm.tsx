@@ -1,160 +1,272 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, MapPin, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { md, nowTime, today } from "@/lib/format";
 import { MOODS, WEATHERS } from "@/lib/diary";
-import { removePhotos } from "@/lib/photo";
-import FormHeader from "@/components/ui/FormHeader";
-import PhotoField from "@/components/ui/PhotoField";
-import WeatherIcon from "@/components/Weather";
-import type { Entry } from "@/lib/types";
+import { EXP_CATS, sym } from "@/lib/money";
+import { uploadPhoto, removePhotos } from "@/lib/photo";
+import { askDel, toast } from "@/lib/ui";
+import Go from "@/components/Go";
+import Ic from "@/components/Ic";
+import DatePick from "@/components/ui/DatePick";
+import type { Entry, Pocket } from "@/lib/types";
 
 type Ev = { id: string; day: string | null; title: string };
+type Props = { tripId: string; days: string[]; events: Ev[]; entry?: Entry; defaultDay?: string; defaultEvent?: string; me: string; currency: string; pockets: Pocket[] };
 
-export default function EntryForm({ tripId, days, events, entry, defaultDay }: { tripId: string; days: string[]; events: Ev[]; entry?: Entry; defaultDay?: string }) {
+/** 기록 쓰기 · 고치기 (목업 write) */
+export default function EntryForm({ tripId, days, events, entry, defaultDay, defaultEvent, me, currency, pockets }: Props) {
   const router = useRouter();
   const edit = !!entry;
   const now = today();
-  const [day, setDay] = useState(entry?.day ?? (defaultDay && days.includes(defaultDay) ? defaultDay : days.includes(now) ? now : days[0] ?? ""));
+  const ev0 = defaultEvent ? events.find((e) => e.id === defaultEvent) : undefined;
+  const [day, setDay] = useState(entry?.day ?? ev0?.day ?? (defaultDay && days.includes(defaultDay) ? defaultDay : days.includes(now) ? now : days[0] ?? ""));
   const [time, setTime] = useState(entry?.time_text ?? (days.includes(now) ? nowTime() : ""));
-  const [place, setPlace] = useState(entry?.place ?? "");
-  const [eventId, setEventId] = useState(entry?.event_id ?? "");
-  const [weather, setWeather] = useState(entry?.weather ?? "");
+  const [place, setPlace] = useState(entry?.place ?? ev0?.title ?? "");
+  const [eventId, setEventId] = useState(entry?.event_id ?? ev0?.id ?? "");
+  const [wx, setWx] = useState(entry?.weather ?? "");
   const [mood, setMood] = useState(entry?.mood ?? "");
   const [title, setTitle] = useState(entry?.title ?? "");
   const [body, setBody] = useState(entry?.body ?? "");
   const [photos, setPhotos] = useState<string[]>(entry?.photos ?? []);
+  const [loading, setLoading] = useState(0);
+  const [inPdf, setInPdf] = useState(entry?.in_pdf ?? true);
+  const [withExp, setWithExp] = useState(false);
+  const [amt, setAmt] = useState("");
+  const [pk, setPk] = useState(pockets.find((p) => p.shared)?.id ?? pockets[0]?.id ?? "");
+  const [cat, setCat] = useState("식비");
+  const [dp, setDp] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const dayEvents = events.filter((e) => e.day === day);
-  const canSave = !!(title.trim() || body.trim() || photos.length) && !uploading;
+  const no = days.indexOf(day) + 1;
+
+  async function addFiles(fs: FileList | null) {
+    if (!fs?.length) return;
+    const list = Array.from(fs).slice(0, 30 - photos.length);
+    setLoading(list.length);
+    const out = [...photos];
+    for (const f of list) {
+      try {
+        out.push(await uploadPhoto(tripId, f));
+        setPhotos([...out]);
+      } catch {
+        toast("사진을 올리지 못했어요");
+      }
+      setLoading((n) => n - 1);
+    }
+    if (fileRef.current) fileRef.current.value = "";
+  }
 
   async function save() {
+    if (!title.trim() && !body.trim() && !photos.length) return toast("제목이나 내용을 적어 주세요");
+    if (loading) return toast("사진을 올리는 중이에요");
     setBusy(true);
-    const row = {
-      trip_id: tripId,
-      day: day || null,
-      time_text: time.trim() || null,
-      place: place.trim() || null,
-      event_id: eventId || null,
-      weather: weather || null,
-      mood: mood || null,
-      title: title.trim() || null,
-      body: body.trim() || null,
-      photos,
-    };
+    const row = { trip_id: tripId, day: day || null, time_text: time.trim() || null, place: place.trim() || null, event_id: eventId || null, weather: wx || null, mood: mood || null, title: title.trim() || null, body: body.trim() || null, photos, in_pdf: inPdf };
     const supabase = createClient();
     const res = edit ? await supabase.from("entries").update(row).eq("id", entry!.id).select("id").single() : await supabase.from("entries").insert(row).select("id").single();
-    setBusy(false);
-    if (res.error) return alert("저장하지 못했어요");
+    if (res.error) {
+      setBusy(false);
+      return toast("저장하지 못했어요");
+    }
     if (edit) {
       const gone = (entry!.photos || []).filter((p) => !photos.includes(p));
       if (gone.length) removePhotos(gone);
+    }
+    const a = Number(amt.replace(/[^\d.]/g, ""));
+    if (!edit && withExp && a > 0) {
+      const p = pockets.find((x) => x.id === pk);
+      await supabase.from("expenses").insert({ trip_id: tripId, pocket_id: p?.id ?? null, payer_id: p?.shared ? null : p?.owner_id ?? me, amount: a, currency: p?.currency ?? currency, category: cat, title: title.trim() || place.trim() || "기록에서 쓴 돈", day: day || null, time_text: time.trim() || null });
     }
     router.replace(`/trips/${tripId}/diary/${res.data.id}`);
     router.refresh();
   }
 
-  async function remove() {
-    if (!entry || !confirm("이 기록을 지울까요?")) return;
-    const { error } = await createClient().from("entries").delete().eq("id", entry.id);
-    if (error) return alert("지우지 못했어요");
-    removePhotos(entry.photos || []);
-    router.replace(`/trips/${tripId}/diary?day=${entry.day ?? ""}`);
-    router.refresh();
-  }
-
+  const cur = pockets.find((p) => p.id === pk)?.currency ?? currency;
   return (
-    <main className="pb-10">
-      <FormHeader title={edit ? "기록 수정" : "기록 쓰기"} onSave={save} canSave={canSave} busy={busy} />
-      <div className="px-4 pt-2">
-        <section className="card px-4">
-          <div className="flex items-center gap-3 border-b border-line py-3">
-            <CalendarDays size={18} className="flex-none text-sub" />
-            <select className="min-w-0 flex-1 appearance-none bg-transparent text-[15px] font-semibold outline-none" value={day} onChange={(e) => setDay(e.target.value)}>
-              {days.map((d, i) => (
-                <option key={d} value={d}>
-                  DAY {i + 1} · {md(d)}
-                </option>
-              ))}
-            </select>
-            <input className="w-[72px] bg-transparent text-right text-[15px] font-semibold outline-none placeholder:text-sub2" value={time} onChange={(e) => setTime(e.target.value)} placeholder="시간" inputMode="numeric" />
+    <section className="screen on" id="write">
+      <div className="scr nonav">
+        <div className="hd">
+          <Go as="span" className="ib" back>
+            <Ic n="x" />
+          </Go>
+          <h2>{edit ? "기록 고치기" : "기록 쓰기"}</h2>
+          <span className={`txtbtn${busy ? " off" : ""}`} id="wSave" onClick={save}>
+            저장
+          </span>
+        </div>
+        <div className="pad" style={{ paddingBottom: 28 }}>
+          <div className="wmeta">
+            <div onClick={() => days.length && setDp(true)} style={{ cursor: "pointer" }}>
+              <Ic n="calendar-days" />
+              <span>{day ? `${md(day).replace(".", "/")}${time ? ` ${time}` : ""}` : time || "날짜"}</span>
+              {no > 0 && <i>DAY {no}</i>}
+            </div>
+            <div className="wplace">
+              <Ic n="map-pin" />
+              <input
+                className="wp-t"
+                value={place}
+                onChange={(e) => {
+                  setPlace(e.target.value);
+                  setEventId("");
+                }}
+                placeholder="장소"
+                style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", fontFamily: "inherit", fontSize: 14 }}
+              />
+            </div>
+            <div className="wx">
+              <Ic n={WEATHERS.find((w) => w.key === wx)?.ic ?? "cloud-sun"} />
+              <span className="wx-i">
+                {WEATHERS.map((w) => (
+                  <span key={w.key} className={wx === w.key ? "on" : ""} title={w.label} onClick={() => setWx(wx === w.key ? "" : w.key)}>
+                    <Ic n={w.ic} />
+                  </span>
+                ))}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-3 border-b border-line py-3">
-            <MapPin size={18} className="flex-none text-sub" />
-            <input
-              className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-sub2"
-              value={place}
-              onChange={(e) => {
-                setPlace(e.target.value);
-                setEventId("");
-              }}
-              placeholder="장소"
-            />
-          </div>
-          <div className="flex items-center justify-between py-2.5">
-            {WEATHERS.map((w) => (
-              <button
-                key={w.key}
-                onClick={() => setWeather(weather === w.key ? "" : w.key)}
-                aria-label={w.label}
-                className={`grid h-10 w-12 place-items-center rounded-xl ${weather === w.key ? "bg-char text-white" : "text-sub"}`}
-              >
-                <WeatherIcon w={w.key} size={20} />
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {dayEvents.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-[12.5px] font-semibold text-sub">이날 일정</span>
-            {dayEvents.map((e) => (
-              <button
-                key={e.id}
-                className={`chip !py-1.5 !text-[13px] ${eventId === e.id ? "on" : ""}`}
-                onClick={() => {
-                  if (eventId === e.id) {
-                    setEventId("");
-                  } else {
+          {dayEvents.length > 0 && (
+            <div className="wsug">
+              <span className="sub">DAY {no} 일정</span>
+              {dayEvents.map((e) => (
+                <span
+                  key={e.id}
+                  data-wp=""
+                  className={eventId === e.id ? "on" : ""}
+                  onClick={() => {
+                    if (eventId === e.id) return setEventId("");
                     setEventId(e.id);
                     setPlace(e.title);
-                  }
-                }}
-              >
-                {e.title}
-              </button>
+                  }}
+                >
+                  {e.title}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="moods">
+            {MOODS.map(([m, l]) => (
+              <span key={m} className={mood === m ? "on" : ""} title={l} onClick={() => setMood(mood === m ? "" : m)}>
+                <em>{m}</em>
+              </span>
             ))}
           </div>
-        )}
-
-        <div className="mt-3 flex justify-between gap-1 rounded-2xl bg-white px-2 py-2">
-          {MOODS.map((m) => (
-            <button key={m} onClick={() => setMood(mood === m ? "" : m)} className={`grid h-10 flex-1 place-items-center rounded-xl text-[24px] transition ${mood === m ? "bg-sky-s" : mood ? "opacity-40" : ""}`}>
-              {m}
-            </button>
-          ))}
+          <input className="wtitle" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="제목" style={{ display: "block", width: "100%", border: 0, outline: 0, fontFamily: "inherit" }} />
+          <textarea className="wtext note" value={body} onChange={(e) => setBody(e.target.value)} placeholder="오늘 어땠어요?" style={{ display: "block", width: "100%", border: 0, outline: 0, fontFamily: "inherit", resize: "none" }} />
+          <div className="flab row" style={{ marginTop: 18 }}>
+            <span>
+              사진 <b className="wcnt">{photos.length}</b>
+            </span>
+          </div>
+          <div className="wphotos">
+            {photos.map((u, i) => (
+              <div key={u} className={i === 0 ? "cv" : ""} onClick={() => i > 0 && setPhotos([u, ...photos.filter((x) => x !== u)])}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="im" src={u} alt="" />
+                <b
+                  className="wx-x"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPhotos(photos.filter((x) => x !== u));
+                  }}
+                >
+                  <Ic n="x" />
+                </b>
+                <em>대표</em>
+              </div>
+            ))}
+            {Array.from({ length: loading }).map((_, i) => (
+              <div key={`l${i}`} className="add" style={{ borderStyle: "solid" }}>
+                <Ic n="clock-3" />
+                <span>올리는 중</span>
+              </div>
+            ))}
+            <div className="add" onClick={() => fileRef.current?.click()}>
+              <Ic n="camera" />
+              <span>추가</span>
+            </div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addFiles(e.target.files)} />
+          {!edit && (
+            <>
+              <div className="switches">
+                <div onClick={() => setWithExp(!withExp)}>
+                  <Ic n="receipt" />
+                  <span>지출도 같이 기록</span>
+                  <i className={`sw${withExp ? " on" : ""}`} />
+                </div>
+              </div>
+              <div className={`wexp${withExp ? " on" : ""}`}>
+                <div className="wexp-a">
+                  <span className="cur">{sym(cur).trim()}</span>
+                  <input inputMode="decimal" value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^\d.,]/g, ""))} placeholder="0" style={{ border: 0, outline: 0, background: "none", fontFamily: "inherit", fontSize: 24, fontWeight: 800, width: "60%" }} />
+                </div>
+                {pockets.length > 0 && (
+                  <div className="chips flush wpk">
+                    {pockets.map((p) => (
+                      <span key={p.id} className={`chip${pk === p.id ? " on" : ""}`} onClick={() => setPk(p.id)}>
+                        {p.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="chips flush wcat">
+                  {EXP_CATS.map((c) => (
+                    <span key={c.key} className={`chip${cat === c.key ? " on" : ""}`} onClick={() => setCat(c.key)}>
+                      {c.key}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          <div className="switches">
+            <div onClick={() => setInPdf(!inPdf)}>
+              <Ic n="book-open" />
+              <span>PDF 여행책에 넣기</span>
+              <i className={`sw${inPdf ? " on" : ""}`} />
+            </div>
+          </div>
+          {edit && <DelEntry e={entry!} />}
         </div>
-
-        <section className="card mt-3 p-4">
-          <input className="w-full bg-transparent text-[19px] font-bold outline-none placeholder:text-sub2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="제목" />
-          <textarea className="mt-2 min-h-[180px] w-full resize-none bg-transparent text-[15.5px] leading-[1.75] outline-none placeholder:text-sub2" value={body} onChange={(e) => setBody(e.target.value)} placeholder="오늘 어땠어요?" />
-        </section>
-
-        <label className="flab mx-1">
-          사진 <span className="text-sky-d">{photos.length || ""}</span>
-        </label>
-        <PhotoField tripId={tripId} value={photos} onChange={setPhotos} onBusy={setUploading} max={20} />
-
-        {edit && (
-          <button className="dellink w-full" onClick={remove}>
-            <Trash2 size={16} /> 기록 삭제
-          </button>
-        )}
       </div>
-    </main>
+      <DatePick
+        open={dp}
+        onClose={() => setDp(false)}
+        mode="single"
+        a={day || days[0]}
+        time={time}
+        withTime
+        onDone={(a, _b, t) => {
+          if (a) setDay(a);
+          setTime(t);
+          setEventId("");
+        }}
+      />
+    </section>
+  );
+}
+
+export function DelEntry({ e }: { e: Entry }) {
+  const router = useRouter();
+  return (
+    <div
+      className="dellink"
+      id="evDel"
+      onClick={async () => {
+        if (!(await askDel("이 기록을 지울까요?", "사진도 같이 지워지고 되돌릴 수 없어요"))) return;
+        const { error } = await createClient().from("entries").delete().eq("id", e.id);
+        if (error) return toast("지우지 못했어요");
+        removePhotos(e.photos || []);
+        toast("기록을 지웠어요");
+        router.replace(`/trips/${e.trip_id}/diary${e.day ? `?day=${e.day}` : ""}`);
+        router.refresh();
+      }}
+    >
+      <Ic n="trash" /> 기록 삭제
+    </div>
   );
 }

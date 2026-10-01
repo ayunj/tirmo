@@ -1,18 +1,18 @@
 import { CURRENCIES } from "@/lib/places";
 export { money } from "@/lib/format";
-import type { Expense, Member, Pocket, Transfer, Trip } from "@/lib/types";
+import type { Expense, Member, Pocket, Topup, Transfer, Trip } from "@/lib/types";
 
 export const EXP_CATS = [
-  { key: "식비", color: "#E5574A" },
-  { key: "카페", color: "#E0A03A" },
-  { key: "교통", color: "#4DA3FF" },
-  { key: "쇼핑", color: "#C86FB0" },
-  { key: "숙소", color: "#9A8BC4" },
-  { key: "관광", color: "#3E9A6A" },
-  { key: "항공", color: "#2B7FE0" },
-  { key: "기타", color: "#8B95A1" },
-];
-export const expColor = (c: string) => EXP_CATS.find((x) => x.key === c)?.color ?? "#8B95A1";
+  { key: "식비", color: "#C98718", ec: "amber", ic: "utensils" },
+  { key: "카페", color: "#E0584C", ec: "acc", ic: "coffee" },
+  { key: "교통", color: "#3A6DE0", ec: "blue", ic: "train-front" },
+  { key: "쇼핑", color: "#6A4FD6", ec: "violet", ic: "shopping-bag" },
+  { key: "숙소", color: "#8A6FD6", ec: "violet", ic: "bed-double" },
+  { key: "기타", color: "#2E8C66", ec: "green", ic: "ellipsis" },
+] as const;
+const LEGACY: Record<string, { color: string; ec: string; ic: string }> = { 항공: { color: "#3A6DE0", ec: "blue", ic: "plane" }, 관광: { color: "#2E8C66", ec: "green", ic: "ticket" }, 정산: { color: "#3A6DE0", ec: "blue", ic: "arrow-left-right" } };
+export const expCat = (k: string) => EXP_CATS.find((x) => x.key === k) ?? { key: k, ...(LEGACY[k] ?? LEGACY.관광) };
+export const expColor = (c: string) => expCat(c).color;
 
 export const POCKET_KINDS = [
   { key: "cash", label: "현금" },
@@ -31,9 +31,11 @@ export function toKrw(amount: number, currency: string, trip: Pick<Trip, "curren
 }
 
 /** 포켓에서 쓴 돈 · 남은 돈 */
-export function pocketUse(p: Pocket, list: Expense[]) {
+export function pocketUse(p: Pocket, list: Expense[], tops: Topup[] = []) {
   const used = list.filter((e) => e.pocket_id === p.id && e.currency === p.currency).reduce((s, e) => s + Number(e.amount), 0);
-  return { used, left: Number(p.budget) - used, pct: p.budget > 0 ? Math.min(100, Math.round((used / Number(p.budget)) * 100)) : 0 };
+  const added = tops.filter((t) => t.pocket_id === p.id).reduce((s, t) => s + Number(t.amount), 0);
+  const total = Number(p.budget) + added;
+  return { used, added, total, left: total - used, pct: total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0 };
 }
 
 /**
@@ -52,7 +54,10 @@ export function settle(trip: Pick<Trip, "currency" | "rate" | "rate_unit">, memb
     const krw = toKrw(Number(e.amount), e.currency, trip);
     total += krw;
     paid[e.payer_id] += krw;
-    for (const m of who) owe[m] += krw / who.length;
+    if (e.split.mode === "own" && e.split.shares) {
+      const k = krw / (Number(e.amount) || 1);
+      for (const m of who) owe[m] += (Number(e.split.shares[m]) || 0) * k;
+    } else for (const m of who) owe[m] += krw / who.length;
   }
   // 받을 돈(+) / 보낼 돈(-)
   const bal: Record<string, number> = Object.fromEntries(ids.map((i) => [i, paid[i] - owe[i]]));
@@ -75,3 +80,11 @@ export function settle(trip: Pick<Trip, "currency" | "rate" | "rate_unit">, memb
   }
   return { total, paid, owe, moves };
 }
+
+/** 포켓 아이콘 · 색 (목업) */
+const PK: Record<string, { ic: "banknote" | "credit-card" | "landmark"; c: string; color: string }> = {
+  cash: { ic: "banknote", c: "amber", color: "var(--amber)" },
+  card: { ic: "credit-card", c: "violet", color: "var(--violet)" },
+  bank: { ic: "landmark", c: "green", color: "var(--green)" },
+};
+export const pkStyle = (p: Pick<Pocket, "kind" | "shared">) => (p.shared ? { ...PK[p.kind], c: "acc", color: "var(--acc)" } : PK[p.kind]);

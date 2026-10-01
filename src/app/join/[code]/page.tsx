@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/supabase/server";
-import { range } from "@/lib/format";
-import { coverStyle } from "@/components/bits";
+import { coverDate, cv } from "@/lib/cover";
 import JoinButton from "@/components/JoinButton";
 
 export default async function JoinPage({ params }: { params: Promise<{ code: string }> }) {
@@ -14,25 +13,35 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
   const t = Array.isArray(data) ? data[0] : null;
   if (!t) {
     return (
-      <main className="px-8 pt-32 text-center">
-        <b className="text-lg">초대 링크가 맞지 않아요</b>
-        <p className="s13 mt-1">링크를 다시 받아 주세요</p>
-      </main>
+      <section className="screen on">
+        <div className="scr full nonav login2">
+          <div className="lg-box">
+            <b style={{ fontSize: 19 }}>초대 링크가 맞지 않아요</b>
+            <p>링크를 다시 받아 주세요</p>
+          </div>
+        </div>
+      </section>
     );
   }
   const { data: mine } = await supabase.from("trip_members").select("trip_id").eq("trip_id", t.id).eq("user_id", user.id).maybeSingle();
   if (mine) redirect(`/trips/${t.id}`);
 
   return (
-    <main className="px-5 pt-16">
-      <div className="flex h-[200px] flex-col items-center justify-center rounded-[22px] text-white" style={coverStyle({ cover_color: t.cover_color, cover_photo: null })}>
-        <div className="text-[24px] font-extrabold tracking-tight">{t.title}</div>
-        <div className="mt-1 text-[13px] opacity-90">{range(t.start_date, t.end_date)}</div>
+    <section className="screen on" id="join">
+      <div className="scr full nonav">
+        <div className="pad" style={{ paddingTop: 70 }}>
+          <div className="upcoming colorcv" style={cv({ cover_color: t.cover_color })}>
+            <div className="cc">
+              <div className="disp cc-t">{t.title}</div>
+              <div className="cc-d">{coverDate(t.start_date, t.end_date)}</div>
+            </div>
+          </div>
+          <p style={{ textAlign: "center", fontSize: 15, marginTop: 22 }}>
+            <b>{t.members}명</b>이 같이 준비하고 있어요
+          </p>
+          <JoinButton code={code} />
+        </div>
       </div>
-      <p className="mt-6 text-center text-[15px]">
-        <b>{t.members}명</b>이 같이 준비하고 있어요
-      </p>
-      <JoinButton code={code} />
-    </main>
+    </section>
   );
 }
