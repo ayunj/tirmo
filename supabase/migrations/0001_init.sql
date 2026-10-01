@@ -53,6 +53,11 @@ create table if not exists public.trip_members (
   primary key (trip_id, user_id)
 );
 
+-- 멤버 이름을 같이 불러오려고 프로필과 연결
+do $$ begin
+  alter table public.trip_members add constraint trip_members_profile_fk foreign key (user_id) references public.profiles(id) on delete cascade;
+exception when duplicate_object then null; end $$;
+
 -- 이 여행 멤버인지
 create or replace function public.is_member(t uuid)
 returns boolean language sql stable security definer set search_path = public as $$
