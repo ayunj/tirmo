@@ -3,6 +3,7 @@ import "flag-icons/css/flag-icons.min.css";
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./mock.css";
 import "./app.css";
+import "./refine.css";
 import Overlay from "@/components/ui/Overlay";
 
 export const metadata: Metadata = {

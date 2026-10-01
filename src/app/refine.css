@@ -1,0 +1,32 @@
+/* ===== 다듬기: 덜 굵게 · 덜 알록달록 · 덜 칸칸이 ===== */
+/* 굵기: 800 → 700, 제목 외에는 600 */
+b,strong{font-weight:600}
+.hd h2{font-weight:700;letter-spacing:-.4px}
+.hd h2.big{font-weight:700}
+.cc-t,.disp{font-weight:700!important}
+.ic-t,.bs-n,.tk-rt b,.ps-rt b,.tk-r b,.amt b,.ptitle,.ev-h,.en-h,.dayhead b,.sech b,.stt,.grp,.packsum b,.pk-n b,.sum2 b{font-weight:700!important}
+.chip,.segm span,.seg3 div,.tabs a,.daychips div b,.daychips div i{font-weight:600!important}
+.daychips div.on b,.daychips div.on i{font-weight:700!important}
+.txtbtn{font-weight:700}
+.bigbtn,.btns2 div{font-weight:600}
+
+/* 일정: 시간 · 태그 · 이동 줄을 차분하게 */
+.ev .tm{font-weight:500;color:var(--ink2)}
+.ev .tm.soft{font-weight:600}
+.tl .tag{background:none!important;padding:0!important;margin-top:3px!important;color:var(--sub)!important;font-size:12px!important;font-weight:500!important;height:auto!important}
+.tl .tag svg{display:none}
+.tl .gap span.mv{color:var(--sub)!important;font-weight:500!important;font-size:12.5px}
+.tl .gap span.mv svg{color:var(--sky)}
+.tl .gap span.mv.none{border:none!important;padding:2px 0!important;color:#A8AEB6!important}
+.memo{font-size:13px}
+
+/* 점선 상자 · 테두리를 연하게 */
+.addline{border:1px dashed #D9DDE3!important;font-weight:500!important;color:#8A9099!important;background:transparent}
+.wslot.on,.lkadd,.bp-add,.wi-add,.wphotos .add{border-color:#D9DDE3!important}
+.unsched{border:1px dashed #D9DDE3!important}
+
+/* 이름 알약 · 작은 태그 */
+.names .nm{font-weight:600}
+.tag{font-weight:600}
+.mini3 b{font-weight:700}
+.sub,.s{color:#8B929B}
