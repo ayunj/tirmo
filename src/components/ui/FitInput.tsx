@@ -6,7 +6,7 @@ export default function FitInput({ style, value, placeholder, ...rest }: React.I
   return (
     <span style={{ display: "inline-grid", marginTop: style?.marginTop }}>
       <span aria-hidden style={{ ...font, gridArea: "1 / 1", visibility: "hidden", whiteSpace: "pre", padding: "0 2px" }}>{value || placeholder || " "}</span>
-      <input {...rest} value={value} placeholder={placeholder} style={{ ...style, marginTop: 0, gridArea: "1 / 1", width: "100%", minWidth: 0, padding: 0, textAlign: "center" }} />
+      <input size={1} {...rest} value={value} placeholder={placeholder} style={{ ...style, marginTop: 0, gridArea: "1 / 1", width: "100%", minWidth: 0, padding: 0, textAlign: "center" }} />
     </span>
   );
 }
