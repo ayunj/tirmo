@@ -267,7 +267,7 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
-          <h2>{edit ? "예약 고치기" : "예약 추가"}</h2>
+          <h2>{edit ? "예약 수정" : "예약 추가"}</h2>
         </div>
         <div className="pad" style={{ paddingBottom: 28 }}>
           <div className="typeg">

@@ -62,7 +62,7 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
-          <h2>{edit ? "포켓 고치기" : "포켓 만들기"}</h2>
+          <h2>{edit ? "포켓 수정" : "포켓 만들기"}</h2>
         </div>
         <div className="pad">
           <div className="typeg three">

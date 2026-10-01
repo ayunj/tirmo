@@ -96,7 +96,7 @@ export default function EntryForm({ tripId, days, events, entry, defaultDay, def
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
-          <h2>{edit ? "기록 고치기" : "기록 쓰기"}</h2>
+          <h2>{edit ? "기록 수정" : "기록 쓰기"}</h2>
         </div>
         <div className="pad" style={{ paddingBottom: 28 }}>
           <div className="wmeta">

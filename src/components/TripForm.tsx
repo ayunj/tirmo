@@ -514,7 +514,7 @@ export default function TripForm({ trip, members = [], recentCountries = [], rec
         </div>
         {rateEdit && (
           <div className="sub" style={{ marginTop: 6 }}>
-            원화 금액만 고쳐요
+            원화 금액만 수정해요
           </div>
         )}
         <div className="bigbtn" onClick={() => setSheet("")}>

@@ -189,7 +189,7 @@ export default function PackScreen({ tripId, head, items, members, dleft, prev }
         </div>
       </div>
 
-      <Sheet open={!!sheet} onClose={() => setSheet(null)} title={sheet?.it ? "준비물 고치기" : "준비물 추가"} id="packItem">
+      <Sheet open={!!sheet} onClose={() => setSheet(null)} title={sheet?.it ? "준비물 수정" : "준비물 추가"} id="packItem">
         <label className="flab">이름</label>
         <input className="inp wi-f" autoFocus={!sheet?.it} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && save()} placeholder="예) 상비약, 셀카봉" style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 14, padding: "14px 15px" }} />
         <label className="flab">카테고리</label>

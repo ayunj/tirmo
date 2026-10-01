@@ -74,7 +74,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   }
   /** 저장 안 한 게 있으면 물어보고 이동 */
   async function leave(go: () => void) {
-    if (dirty && !(await askDel("저장하지 않고 나갈까요?", "고친 내용이 사라져요", "나가기"))) return;
+    if (dirty && !(await askDel("저장하지 않고 나갈까요?", "수정한 내용이 사라져요", "나가기"))) return;
     go();
   }
 

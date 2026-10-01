@@ -133,7 +133,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
-          <h2>{edit ? "지출 고치기" : "지출 쓰기"}</h2>
+          <h2>{edit ? "지출 수정" : "지출 쓰기"}</h2>
         </div>
         <div className="pad">
           <div className="amt">
