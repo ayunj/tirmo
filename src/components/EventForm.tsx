@@ -4,7 +4,8 @@ import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { EV_CATS, evCat } from "@/lib/cats";
-import { parseDate, timeSort } from "@/lib/format";
+import { autoAt, byEv, normTime, parseDate, parseTime, sortAt } from "@/lib/format";
+import TimeInput from "@/components/ui/TimeInput";
 import { uploadPhoto } from "@/lib/photo";
 import { toast } from "@/lib/ui";
 import Go from "@/components/Go";
@@ -27,6 +28,7 @@ type Props = {
 };
 
 const MOVES: [string, IcName, string][] = [
+  ["flight", "plane", "비행기"],
   ["walk", "footprints", "도보"],
   ["transit", "train-front", "대중교통"],
   ["taxi", "car-taxi-front", "택시"],
@@ -57,13 +59,10 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
   const [lt, setLt] = useState<"bk" | "wish">("bk");
   const [busy, setBusy] = useState(false);
 
-  const list = useMemo(() => dayEvents.filter((e) => (day === "none" ? !e.day : e.day === day)).sort((a, b) => a.sort - b.sort), [dayEvents, day]);
-  const autoSlot = useMemo(() => {
-    const t = timeSort(time);
-    const i = list.findIndex((e) => e.sort > t);
-    return i <= 0 ? (i === 0 && time.trim() ? 0 : list.length) : i;
-  }, [list, time]);
-  const at = slot ?? autoSlot;
+  const list = useMemo(() => dayEvents.filter((e) => (day === "none" ? !e.day : e.day === day)).sort(byEv), [dayEvents, day]);
+  // 시간을 넣으면 그 시간대 자리로 자동, 시간이 없으면 직접 고른 자리 (기본은 맨 끝)
+  const hasTime = parseTime(time) != null;
+  const at = hasTime ? autoAt(list, time) : slot ?? list.length;
   const name = title.trim() || "새 일정";
   const q = title.trim();
   const sugF = frequent.filter((s) => !q || s.title.includes(q));
@@ -81,9 +80,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
   async function save() {
     if (!title.trim()) return toast("이름을 적어 주세요");
     setBusy(true);
-    const prev = list[at - 1]?.sort;
-    const next = list[at]?.sort;
-    const sort = slot != null || !time.trim() ? (prev == null && next == null ? timeSort(time) : prev == null ? next! - 1 : next == null ? prev + 1 : (prev + next) / 2) : timeSort(time) + Math.random() / 10;
+    const sort = sortAt(list, at, time);
     const supabase = createClient();
     const { data, error } = await supabase
       .from("events")
@@ -92,7 +89,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
         title: title.trim(),
         category: cat,
         day: day === "none" ? null : day,
-        time_text: time.trim() || null,
+        time_text: time.trim() ? normTime(time) : null,
         sort,
         move_mode: move || null,
         move_note: moveNote.trim() || null,
@@ -234,7 +231,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
           </label>
           <div className="inp row tin tinput">
             <Ic n="clock-3" />
-            <input className="tedit" value={time} onChange={(e) => (setTime(e.target.value), setSlot(null))} placeholder="예) 21:00, 오후" style={{ flex: 1, border: 0, outline: 0, background: "none" }} />
+            <TimeInput className="tedit" value={time} onChange={(v) => setTime(v)} placeholder="예) 2130 → 21:30" style={{ flex: 1, border: 0, outline: 0, background: "none" }} />
           </div>
 
           {list.length > 0 && (
@@ -243,8 +240,8 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
               <div className="wlist">
                 {Array.from({ length: list.length + 1 }).map((_, i) => (
                   <Fragment key={i}>
-                    {i > 0 && (
-                    <div className={`wslot${at === i ? " on" : ""}`} onClick={() => setSlot(i)}>
+                    {(i > 0 || at === 0) && (
+                    <div className={`wslot${at === i ? " on" : ""}`} onClick={() => (hasTime ? toast("시간을 지우면 자리를 직접 고를 수 있어요") : setSlot(i))}>
                       <i className="ck" />
                       <span className="wh">여기에 넣기</span>
                       <span className="wn">{name}</span>
@@ -257,7 +254,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
                     )}
                     {list[i] && (
                       <div className="wl">
-                        <span className="t">{list[i].time_text}</span>
+                        <span className="t">{normTime(list[i].time_text)}</span>
                         <b>{list[i].title}</b>
                       </div>
                     )}
@@ -270,7 +267,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
           <label className="flab" id="move">
             가는 방법
           </label>
-          <div className="modes">
+          <div className="modes" style={{ gridTemplateColumns: "repeat(5,1fr)", gap: 6 }}>
             {MOVES.map(([k, n, l]) => (
               <div key={k} className={move === k ? "on" : ""} onClick={() => setMove(move === k ? "" : k)}>
                 <Ic n={n} />
@@ -278,7 +275,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
               </div>
             ))}
           </div>
-          {move && <input className="inp" style={{ marginTop: 8 }} value={moveNote} onChange={(e) => setMoveNote(e.target.value)} placeholder="예) 공항버스 30분 · ¥500" />}
+          {move && <input className="inp" style={{ marginTop: 8 }} value={moveNote} onChange={(e) => setMoveNote(e.target.value)} placeholder={move === "flight" ? "예) 1시간 30분 · 7C1471" : "예) 공항버스 30분 · ¥500"} />}
 
           <div className="form tight">
             <div className="inp row">

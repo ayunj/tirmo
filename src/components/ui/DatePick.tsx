@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sheet from "@/components/ui/Sheet";
 import Ic from "@/components/Ic";
+import TimeInput, { finishTime } from "@/components/ui/TimeInput";
 
 const WK = ["일", "월", "화", "수", "목", "금", "토"];
 const p2 = (n: number) => String(n).padStart(2, "0");
@@ -136,7 +137,7 @@ export default function DatePick({
             </label>
             <div className="inp row tin tinput">
               <Ic n="clock-3" />
-              <input className="tedit" value={T} onChange={(e) => setT(e.target.value)} placeholder="예) 15:00" inputMode="numeric" style={{ border: 0, outline: 0, background: "none", flex: 1 }} />
+              <TimeInput className="tedit" value={T} onChange={setT} placeholder="예) 1500 → 15:00" style={{ border: 0, outline: 0, background: "none", flex: 1 }} />
             </div>
           </div>
         )}
@@ -145,7 +146,7 @@ export default function DatePick({
           style={{ opacity: mode === "range" && A && !B ? 0.5 : 1 }}
           onClick={() => {
             if (mode === "range" && A && !B) return;
-            onDone(A, mode === "range" ? B : null, T);
+            onDone(A, mode === "range" ? B : null, finishTime(T));
             onClose();
           }}
         >

@@ -13,5 +13,5 @@ export const EV_CATS: { key: string; dot: string; evi: string; tag: string; ic: 
 ];
 export const evCat = (k: string) => EV_CATS.find((c) => c.key === k) ?? EV_CATS[EV_CATS.length - 1];
 
-export const MOVE_IC: Record<string, IcName> = { walk: "footprints", transit: "bus", taxi: "car-taxi-front", car: "car" };
-export const MOVE_LABEL: Record<string, string> = { walk: "도보", transit: "대중교통", taxi: "택시", car: "차" };
+export const MOVE_IC: Record<string, IcName> = { flight: "plane", walk: "footprints", transit: "bus", taxi: "car-taxi-front", car: "car" };
+export const MOVE_LABEL: Record<string, string> = { flight: "비행", walk: "도보", transit: "대중교통", taxi: "택시", car: "차" };

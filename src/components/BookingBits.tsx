@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { uploadPhoto, removePhotos } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
-import { bookingTitle } from "@/lib/booking";
-import { timeSort } from "@/lib/format";
+import { bookingTitle, flightKo } from "@/lib/booking";
+import { normTime, parseTime } from "@/lib/format";
 import Ic from "@/components/Ic";
 import type { Booking } from "@/lib/types";
 
@@ -100,15 +100,15 @@ export function ToPlan({ b, days }: { b: Booking; days: string[] }) {
     trip_id: b.trip_id,
     booking_id: b.id,
     day: inTrip(day),
-    time_text: time || null,
-    sort: timeSort(time) + Math.random() / 10,
+    time_text: time ? normTime(time) : null,
+    sort: (parseTime(time) ?? 1500) + Math.random() / 100,
     title,
     category,
     address: address || null,
   });
   const rows =
     b.kind === "flight"
-      ? [ev(d.date, d.from_time, `${d.from || "출발"} 출발`, "교통", bookingTitle(b)), ...(d.to_time ? [ev(d.date, d.to_time, `${d.to || "도착"} 도착`, "교통", b.title)] : [])]
+      ? [ev(d.date, d.from_time, `${d.from || "출발"} 출발`, "교통", bookingTitle(b)), ...(d.to_time ? [{ ...ev(d.date, d.to_time, `${d.to || "도착"} 도착`, "교통", b.title), move_mode: "flight", move_note: flightKo(d.from_time, d.to_time) || null }] : [])]
       : b.kind === "hotel"
         ? [ev(d.checkin, d.checkin_time, "호텔 체크인", "숙소", b.title), ev(d.checkout, d.checkout_time, "체크아웃", "숙소", b.title)]
         : b.kind === "car"

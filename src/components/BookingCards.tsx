@@ -1,4 +1,5 @@
 import Go from "@/components/Go";
+import { normTime } from "@/lib/format";
 import Ic from "@/components/Ic";
 import { airportCode, between, nights, when } from "@/lib/booking";
 import { parseDate, weekday } from "@/lib/format";
@@ -15,7 +16,7 @@ export function Ticket({ b, tid, leg }: { b: Booking; tid: string; leg?: string 
         <div className="tk-rt">
           <div>
             <b>{airportCode(d.from) || "출발"}</b>
-            <span>{d.from_time}</span>
+            <span>{normTime(d.from_time)}</span>
           </div>
           <div className="tk-mid">
             <Ic n="plane" />
@@ -23,7 +24,7 @@ export function Ticket({ b, tid, leg }: { b: Booking; tid: string; leg?: string 
           </div>
           <div style={{ textAlign: "right" }}>
             <b>{airportCode(d.to) || "도착"}</b>
-            <span>{d.to_time}</span>
+            <span>{normTime(d.to_time)}</span>
           </div>
         </div>
       </div>

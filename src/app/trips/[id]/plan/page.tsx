@@ -1,5 +1,5 @@
 import { loadTrip } from "@/lib/trip";
-import { days, parseDate, range, today, weekday } from "@/lib/format";
+import { byEv, days, normTime, parseDate, parseTime, range, today, weekday } from "@/lib/format";
 import { evCat, MOVE_IC, MOVE_LABEL } from "@/lib/cats";
 import Go from "@/components/Go";
 import Ic from "@/components/Ic";
@@ -18,7 +18,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
 
   const { data } = await supabase.from("events").select("*").eq("trip_id", id).order("sort");
   const all = (data ?? []) as EventRow[];
-  const list = all.filter((e) => (sel === "none" ? !e.day : e.day === sel));
+  const list = all.filter((e) => (sel === "none" ? !e.day : e.day === sel)).sort(byEv);
   const undated = all.filter((e) => !e.day);
   const no = ds.indexOf(sel) + 1;
   const d = sel !== "none" ? parseDate(sel) : null;
@@ -63,7 +63,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
               <div className="tl">
                 {list.map((e, i) => {
                   const c = evCat(e.category);
-                  const soft = !e.time_text || !/\d/.test(e.time_text);
+                  const soft = parseTime(e.time_text) == null;
                   return (
                     <div key={e.id} style={{ display: "contents" }}>
                       {i > 0 &&
@@ -82,7 +82,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
                           </Go>
                         ))}
                       <Go className={`ev${e.booking_id ? "" : ""}`} href={`${base}/${e.id}`}>
-                        <div className={`tm${soft ? " soft" : ""}${!e.time_text ? " none" : ""}`}>{e.time_text || "·"}</div>
+                        <div className={`tm${soft ? " soft" : ""}${!e.time_text ? " none" : ""}`}>{normTime(e.time_text) || "·"}</div>
                         <div className={`rail${i === list.length - 1 ? " last" : ""}`}>
                           <i className={`dot ${c.dot}`} />
                         </div>

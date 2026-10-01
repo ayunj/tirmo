@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { BOOKING_KINDS, bookingTitle, sortKey } from "@/lib/booking";
+import { BOOKING_KINDS, bookingTitle, flightKo, sortKey } from "@/lib/booking";
 import { removePhotos } from "@/lib/photo";
 import { sym } from "@/lib/money";
-import { timeSort } from "@/lib/format";
+import { normTime, parseTime } from "@/lib/format";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
 import Ic, { type IcName } from "@/components/Ic";
 import DatePick from "@/components/ui/DatePick";
+import TimeInput from "@/components/ui/TimeInput";
 import PhotoField from "@/components/ui/PhotoField";
 import type { Booking, BookingKind, Pocket } from "@/lib/types";
 
@@ -64,7 +65,11 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
       <label>
         {label} {sub && <span className="sub">{sub}</span>}
       </label>
-      <input className="inp" value={d[k] ?? ""} onChange={set(k)} placeholder={ph} />
+      {/(_time|^boarding)$/.test(k) ? (
+        <TimeInput className="inp" value={d[k] ?? ""} onChange={(v) => setD((o) => ({ ...o, [k]: v }))} placeholder={ph.replace(":", "")} />
+      ) : (
+        <input className="inp" value={d[k] ?? ""} onChange={set(k)} placeholder={ph} />
+      )}
     </div>
   );
   const T = (label: string, ph = "") => (
@@ -205,15 +210,15 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
           trip_id: tripId,
           booking_id: id,
           day: inTrip(day),
-          time_text: time || null,
-          sort: timeSort(time) + Math.random() / 10,
+          time_text: time ? normTime(time) : null,
+          sort: (parseTime(time) ?? 1500) + Math.random() / 100,
           title: t,
           category,
           address: address || null,
         });
         const evs =
           kind === "flight"
-            ? [ev(d.date, d.from_time, `${d.from || "출발"} 출발`, "교통", name), ...(d.to_time ? [ev(d.date, d.to_time, `${d.to || "도착"} 도착`, "교통", name)] : [])]
+            ? [ev(d.date, d.from_time, `${d.from || "출발"} 출발`, "교통", name), ...(d.to_time ? [{ ...ev(d.date, d.to_time, `${d.to || "도착"} 도착`, "교통", name), move_mode: "flight", move_note: flightKo(d.from_time, d.to_time) || null }] : [])]
             : kind === "hotel"
               ? [ev(d.checkin, d.checkin_time, "호텔 체크인", "숙소", name), ev(d.checkout, d.checkout_time, "체크아웃", "숙소", name)]
               : kind === "car"

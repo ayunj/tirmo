@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { EV_CATS, evCat } from "@/lib/cats";
-import { timeSort } from "@/lib/format";
+import { normTime, parseTime } from "@/lib/format";
+import TimeInput from "@/components/ui/TimeInput";
 import { uploadPhoto, removePhotos } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
@@ -14,6 +15,7 @@ import { LinkPick, type LinkOpt } from "@/components/EventForm";
 import type { EventRow } from "@/lib/types";
 
 const MOVES: [string, IcName, string][] = [
+  ["flight", "plane", "비행기"],
   ["walk", "footprints", "도보"],
   ["transit", "train-front", "대중교통"],
   ["taxi", "car-taxi-front", "택시"],
@@ -31,6 +33,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   const [lp, setLp] = useState(false);
   const [lt, setLt] = useState<"bk" | "wish">("bk");
   const [up, setUp] = useState(false);
+  const [tm, setTm] = useState(normTime(ev.time_text));
   const c = evCat(e.category);
   const tid = e.trip_id;
   const bk = bookings.find((b) => b.id === e.booking_id);
@@ -39,7 +42,10 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   async function patch(p: Partial<EventRow>) {
     const next = { ...e, ...p };
     setE(next);
-    if ("time_text" in p && p.time_text !== e.time_text) (p as Record<string, unknown>).sort = timeSort(p.time_text) + Math.random() / 10;
+    if ("time_text" in p && p.time_text !== e.time_text) {
+      const v = parseTime(p.time_text);
+      if (v != null) (p as Record<string, unknown>).sort = v + Math.random() / 100;
+    }
     const { error } = await createClient().from("events").update(p).eq("id", e.id);
     if (error) toast("저장하지 못했어요");
     else router.refresh();
@@ -175,12 +181,12 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
               <span className="mp-l">시간</span>
               <div className="inp row tin tinput">
                 <Ic n="clock-3" />
-                <input className="tedit" defaultValue={e.time_text ?? ""} placeholder="예) 14:30" onBlur={blurSave("time_text")} style={{ flex: 1, border: 0, outline: 0, background: "none" }} />
+                <TimeInput className="tedit" value={tm} onChange={setTm} onDone={(v) => v !== (e.time_text ?? "") && patch({ time_text: v || null })} placeholder="예) 1430 → 14:30" style={{ flex: 1, border: 0, outline: 0, background: "none" }} />
               </div>
             </div>
             <div className="mp-r" id="move">
               <span className="mp-l">가는 방법</span>
-              <div className="mp-mv">
+              <div className="mp-mv" style={{ flexWrap: "wrap" }}>
                 {MOVES.map(([k, n, l]) => (
                   <span key={k} className={e.move_mode === k ? "on" : ""} onClick={() => patch({ move_mode: e.move_mode === k ? null : k })}>
                     <Ic n={n} /> {l}

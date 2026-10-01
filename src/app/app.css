@@ -39,3 +39,4 @@ textarea.inp{resize:none;line-height:1.6}
 .cd.st::before,.cd.en::before{content:"";position:absolute;top:0;left:50%;width:38px;height:38px;margin-left:-19px;border-radius:50%;background:var(--deep);z-index:-1}
 .cd.st.r{background:linear-gradient(90deg,transparent 50%,var(--brand-s) 50%)!important}
 .cd.en.l{background:linear-gradient(90deg,var(--brand-s) 50%,transparent 50%)!important}
+.mv.flight{background:var(--blue-s);color:var(--blue)}

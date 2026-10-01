@@ -1,5 +1,5 @@
 import { loadTrip } from "@/lib/trip";
-import { dday, days, md, range, today } from "@/lib/format";
+import { byEv, dday, days, md, normTime, range, today } from "@/lib/format";
 import { catColor } from "@/lib/places";
 import { coverDate, cv } from "@/lib/cover";
 import { money, pocketUse, sym } from "@/lib/money";
@@ -30,7 +30,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   const now = today();
   const showDay = ds.includes(now) ? now : ds[0];
   const dayNo = showDay ? ds.indexOf(showDay) + 1 : 0;
-  const preview = events.filter((e) => e.day === showDay).slice(0, 4);
+  const preview = events.filter((e) => e.day === showDay).sort(byEv).slice(0, 4);
   const flight = bookings.filter((b) => b.kind === "flight").find((b) => !b.details?.date || b.details.date >= now) ?? bookings.find((b) => b.kind === "flight");
   const hotel = bookings.find((b) => b.kind === "hotel");
   const waits = bookings.filter((b) => b.status === "예약 오픈 대기");
@@ -140,7 +140,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
             <Go className="dprev" href={`/trips/${id}/plan${showDay ? `?day=${showDay}` : ""}`}>
               {preview.map((e) => (
                 <div key={e.id}>
-                  <span className="t">{e.time_text || "·"}</span>
+                  <span className="t">{normTime(e.time_text) || "·"}</span>
                   <span className="d" style={{ background: catColor(e.category) }} />
                   <b>{e.title}</b>
                 </div>

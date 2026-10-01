@@ -4,6 +4,7 @@ import { airportCode, between, kindLabel, nights } from "@/lib/booking";
 import { days, parseDate } from "@/lib/format";
 import { money, sym, toKrw } from "@/lib/money";
 import Go from "@/components/Go";
+import { normTime } from "@/lib/format";
 import Ic, { type IcName } from "@/components/Ic";
 import { statusTag } from "@/components/BookingCards";
 import { Captures, CopyBtn, DelBooking, ToPlan } from "@/components/BookingBits";
@@ -115,7 +116,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
                   <div>
                     <b>{airportCode(d.from) || "—"}</b>
                     <span>{d.from}</span>
-                    <em>{d.from_time}</em>
+                    <em>{normTime(d.from_time)}</em>
                   </div>
                   <div className="ps-mid">
                     <i />
@@ -126,7 +127,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
                   <div style={{ textAlign: "right" }}>
                     <b>{airportCode(d.to) || "—"}</b>
                     <span>{d.to}</span>
-                    <em>{d.to_time}</em>
+                    <em>{normTime(d.to_time)}</em>
                   </div>
                 </div>
               </div>

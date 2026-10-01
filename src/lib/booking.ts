@@ -1,3 +1,4 @@
+import { parseTime } from "@/lib/format";
 import type { Booking, BookingKind } from "@/lib/types";
 
 export type BField = { key: string; label: string; ph?: string; type?: "date" | "time" | "text" | "tel"; half?: boolean };
@@ -106,10 +107,10 @@ export function bookingTitle(b: Pick<Booking, "kind" | "details" | "title">) {
 
 /** 두 시각 사이 (같은 시간대라고 보고) 1h 30m */
 export function between(a?: string, b?: string) {
-  const m1 = a?.match(/^(\d{1,2}):(\d{2})/);
-  const m2 = b?.match(/^(\d{1,2}):(\d{2})/);
-  if (!m1 || !m2) return "";
-  let diff = Number(m2[1]) * 60 + Number(m2[2]) - (Number(m1[1]) * 60 + Number(m1[2]));
+  const x = parseTime(a);
+  const y = parseTime(b);
+  if (x == null || y == null) return "";
+  let diff = y - x;
   if (diff < 0) diff += 1440;
   return `${Math.floor(diff / 60)}h ${String(diff % 60).padStart(2, "0")}m`;
 }
@@ -137,4 +138,12 @@ export function airportCode(t?: string) {
   const m = s.match(/\b([A-Z]{3})\b/);
   if (m) return m[1];
   return AIRPORTS.find(([k]) => s.includes(k))?.[1] ?? s;
+}
+
+/** 비행 시간 한국어: 1시간 30분 */
+export function flightKo(a?: string, b?: string) {
+  const s = between(a, b);
+  const m = s.match(/(\d+)h (\d+)m/);
+  if (!m) return "";
+  return `${+m[1] ? `${+m[1]}시간` : ""}${+m[2] ? ` ${+m[2]}분` : ""}`.trim();
 }
