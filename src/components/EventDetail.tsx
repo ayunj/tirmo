@@ -17,7 +17,7 @@ import type { EventRow } from "@/lib/types";
 
 type Rec = { id: string; body: string | null; title: string | null; photos: string[]; day: string | null; time_text: string | null };
 
-/** 일정 상세 (목업 place). 고치면 바로 저장돼요 */
+/** 일정 상세 (목업 place). 고친 뒤 저장 버튼으로 저장 */
 export default function EventDetail({ ev, days, bookings, wishes, records, putDay }: { ev: EventRow; days: string[]; bookings: (LinkOpt & { status?: string })[]; wishes: LinkOpt[]; records: Rec[]; putDay?: string }) {
   const router = useRouter();
   const [e, setE] = useState<EventRow>(putDay ? { ...ev, day: putDay } : ev);
@@ -32,29 +32,42 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   const bk = bookings.find((b) => b.id === e.booking_id);
   const wi = wishes.find((w) => w.id === e.wish_id);
 
-  async function patch(p: Partial<EventRow>) {
-    const next = { ...e, ...p };
-    setE(next);
-    if ("time_text" in p && p.time_text !== e.time_text) {
-      const v = parseTime(p.time_text);
-      if (v != null) (p as Record<string, unknown>).sort = v + Math.random() / 100;
-    }
-    const { error } = await createClient().from("events").update(p).eq("id", e.id);
-    if (error) toast("저장하지 못했어요");
-    else {
-      toast("저장했어요");
-      router.refresh();
-    }
+  // 고친 내용은 모아 두었다가 '저장'을 눌러야 저장돼요
+  const [saved, setSaved] = useState<EventRow>(ev);
+  const [busy, setBusy] = useState(false);
+  const KEYS = ["title", "category", "day", "time_text", "memo", "address", "link", "booking_id", "wish_id", "photo"] as const;
+  const diff = Object.fromEntries(KEYS.filter((k) => (e[k] ?? null) !== (saved[k] ?? null)).map((k) => [k, e[k] ?? null])) as Partial<EventRow>;
+  const dirty = Object.keys(diff).length > 0;
+  function patch(p: Partial<EventRow>) {
+    setE((x) => ({ ...x, ...p }));
   }
-  // putDay 로 들어왔으면 그 날로 바로 옮겨요
-  const [moved, setMoved] = useState(false);
-  if (putDay && !moved) {
-    setMoved(true);
-    createClient()
-      .from("events")
-      .update({ day: putDay })
-      .eq("id", e.id)
-      .then(() => toast("이날 일정에 넣었어요"));
+  async function save() {
+    if (!dirty || busy) return;
+    setBusy(true);
+    const row: Record<string, unknown> = { ...diff };
+    if ("time_text" in diff) {
+      const v = parseTime(diff.time_text);
+      if (v != null) row.sort = v + Math.random() / 100;
+    }
+    const { error } = await createClient().from("events").update(row).eq("id", e.id);
+    setBusy(false);
+    if (error) return toast("저장하지 못했어요");
+    if ("photo" in diff && saved.photo) removePhotos([saved.photo]);
+    setSaved(e);
+    toast("저장했어요");
+    router.refresh();
+  }
+  /** 링크를 누를 때 저장 안 한 게 있으면 막고 물어보기 */
+  function guard(x: React.MouseEvent<HTMLElement>) {
+    if (!dirty) return;
+    x.preventDefault();
+    const href = x.currentTarget.getAttribute("data-href");
+    if (href) leave(() => router.push(href));
+  }
+  /** 저장 안 한 게 있으면 물어보고 이동 */
+  async function leave(go: () => void) {
+    if (dirty && !(await askDel("저장하지 않고 나갈까요?", "고친 내용이 사라져요", "나가기"))) return;
+    go();
   }
 
   async function remove() {
@@ -71,8 +84,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
     setUp(true);
     try {
       const url = await uploadPhoto(tid, f);
-      if (e.photo) removePhotos([e.photo]);
-      await patch({ photo: url });
+      patch({ photo: url });
     } catch {
       toast("사진을 올리지 못했어요");
     }
@@ -97,9 +109,9 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
           </div>
           <div className="grad" />
           <div className="cv-top">
-            <Go as="span" className="glass circ" back>
+            <span className="glass circ" onClick={() => leave(() => router.back())}>
               <Ic n="chevron-left" />
-            </Go>
+            </span>
             <label className="glass circ" style={{ cursor: "pointer" }}>
               <Ic n={up ? "clock-3" : "camera"} />
               <input type="file" accept="image/*" hidden onChange={(x) => x.target.files?.[0] && photo(x.target.files[0])} />
@@ -131,7 +143,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
           </div>
 
           {bk && (
-            <Go className={`plbk ${bk.status && bk.status !== "예약 완료" ? "wait" : "ok"}`} id="plBk" href={`/trips/${tid}/bookings/${bk.id}`}>
+            <Go onClick={guard} className={`plbk ${bk.status && bk.status !== "예약 완료" ? "wait" : "ok"}`} id="plBk" href={`/trips/${tid}/bookings/${bk.id}`}>
               <span className="bk-ic">
                 <Ic n={bk.ic ?? "ticket"} />
               </span>
@@ -145,7 +157,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
             </Go>
           )}
           {wi && (
-            <Go className="plbk ok" href={`/trips/${tid}/wish`}>
+            <Go onClick={guard} className="plbk ok" href={`/trips/${tid}/wish`}>
               <span className="bk-ic" style={{ background: "var(--acc-s)", color: "var(--acc)" }}>
                 <Ic n="heart" />
               </span>
@@ -210,7 +222,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
             </div>
             <div className="mp-r">
               <span className="mp-l">오는 길</span>
-              <Go className="mp-link" href={`/trips/${tid}/plan/${e.id}/move`}>
+              <Go className="mp-link" onClick={(x) => { if (dirty) { x.preventDefault(); leave(() => router.push(`/trips/${tid}/plan/${e.id}/move`)); } }} href={`/trips/${tid}/plan/${e.id}/move`}>
                 <Ic n={e.move_mode === "flight" ? "plane" : e.move_mode === "walk" ? "footprints" : e.move_mode === "taxi" ? "car-taxi-front" : e.move_mode === "car" ? "car" : e.move_mode ? "train-front" : "plus"} />
                 <span className={e.move_mode ? "" : "sub"}>{e.move_mode ? [{ flight: "비행기", walk: "도보", transit: "대중교통", taxi: "택시", car: "차" }[e.move_mode], e.move_note].filter(Boolean).join(" · ") : "이동 방법"}</span>
                 <em>{e.move_mode ? "바꾸기" : "선택"}</em>
@@ -230,12 +242,12 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
             <>
               <div className="sech plrec">
                 <b>이곳의 기록</b>
-                <Go as="span" href={`/trips/${tid}/diary/${records[0].id}`}>
+                <Go onClick={guard} as="span" href={`/trips/${tid}/diary/${records[0].id}`}>
                   {records.length}개 <Ic n="chevron-right" />
                 </Go>
               </div>
               {records.map((r) => (
-                <Go key={r.id} className="drow plrec" href={`/trips/${tid}/diary/${r.id}`} style={{ marginBottom: 8 }}>
+                <Go onClick={guard} key={r.id} className="drow plrec" href={`/trips/${tid}/diary/${r.id}`} style={{ marginBottom: 8 }}>
                   {r.photos[0] && (
                     <div className="th">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -257,13 +269,19 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
           )}
 
           <div className="btns2">
-            <Go href={`/trips/${tid}/diary/write?event=${e.id}${e.day ? `&day=${e.day}` : ""}`}>
+            <Go onClick={guard} href={`/trips/${tid}/diary/write?event=${e.id}${e.day ? `&day=${e.day}` : ""}`}>
               <Ic n="square-pen" /> 기록 쓰기
             </Go>
-            <Go href={`/trips/${tid}/money/new?title=${encodeURIComponent(e.title)}${e.day ? `&day=${e.day}` : ""}`}>
+            <Go onClick={guard} href={`/trips/${tid}/money/new?title=${encodeURIComponent(e.title)}${e.day ? `&day=${e.day}` : ""}`}>
               <Ic n="receipt" /> 지출 쓰기
             </Go>
           </div>
+        </div>
+      </div>
+
+      <div className="savebar">
+        <div className={`bigbtn${dirty ? "" : " off"}`} onClick={save}>
+          {busy ? "저장 중…" : dirty ? "저장" : "저장됨"}
         </div>
       </div>
 

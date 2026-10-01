@@ -13,6 +13,7 @@ export default function Go({ href, as = "div", replace, back, ...rest }: { href?
     <T
       {...rest}
       role="link"
+      data-href={href}
       style={{ cursor: "pointer", ...rest.style }}
       // 손가락이 닿는 순간 미리 받기 시작해요
       onPointerDown={(e) => {
