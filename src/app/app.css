@@ -29,3 +29,13 @@ textarea.inp{resize:none;line-height:1.6}
 /* 불러오는 동안 */
 .skel{border-radius:20px;margin-top:10px;background:linear-gradient(90deg,#E9EDF3 0%,#F3F5F8 50%,#E9EDF3 100%);background-size:200% 100%;animation:skel 1.1s ease-in-out infinite}
 @keyframes skel{from{background-position:100% 0}to{background-position:-100% 0}}
+/* 달력: 시작 · 끝 날짜를 같은 동그라미로, 사이는 띠로 */
+.cal{scrollbar-width:none}
+.cal::-webkit-scrollbar{display:none}
+.cal-g{row-gap:4px}
+.cd{width:auto!important;height:38px!important;border-radius:0!important;display:block;position:relative;z-index:0;background:none;text-align:center!important;padding:0}
+.cd.rng{background:var(--brand-s)}
+.cd.st,.cd.en{background:none!important;color:#fff!important;font-weight:800}
+.cd.st::before,.cd.en::before{content:"";position:absolute;top:0;left:50%;width:38px;height:38px;margin-left:-19px;border-radius:50%;background:var(--deep);z-index:-1}
+.cd.st.r{background:linear-gradient(90deg,transparent 50%,var(--brand-s) 50%)!important}
+.cd.en.l{background:linear-gradient(90deg,var(--brand-s) 50%,transparent 50%)!important}

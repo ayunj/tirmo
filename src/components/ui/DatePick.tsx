@@ -114,7 +114,7 @@ export default function DatePick({
                     const d = i + 1;
                     const s = iso(y, mo, d);
                     const dow = (first + i) % 7;
-                    const cls = ["cd", dow === 0 && "sun", dow === 6 && "sat", A === s && "st", B === s && "en", A && B && s > A && s < B && "rng"].filter(Boolean).join(" ");
+                    const cls = ["cd", dow === 0 && "sun", dow === 6 && "sat", A === s && "st", A === s && B && B !== A && "r", B === s && "en", B === s && A && "l", A && B && s > A && s < B && "rng"].filter(Boolean).join(" ");
                     return (
                       <button key={s} className={cls} onClick={() => pick(s)}>
                         {d}
