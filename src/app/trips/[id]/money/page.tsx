@@ -134,6 +134,33 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
             </Go>
           );
         })}
+        {(() => {
+          const loose = expenses.filter((e) => !e.pocket_id);
+          if (!loose.length) return null;
+          const byCur = Array.from(new Set(loose.map((e) => e.currency))).map((c) => ({ c, v: loose.filter((e) => e.currency === c).reduce((x, e) => x + Number(e.amount), 0) }));
+          const sum = loose.reduce((x, e) => x + krw(e), 0);
+          return (
+            <Go className="pocket" href={`${base}?tab=list`}>
+              <div className="pk-h">
+                <span className="pk-ic" style={{ background: "var(--bg)", color: "var(--sub)" }}>
+                  <Ic n="wallet" />
+                </span>
+                <div className="mid">
+                  <b>미지정</b>
+                  <span className="cur k">포켓 없이 쓴 돈</span>
+                </div>
+                <div className="pk-n">
+                  <b>{money(sum, "₩")}</b>
+                  <span>사용</span>
+                </div>
+              </div>
+              <div className="pk-f" style={{ marginTop: 8 }}>
+                <span>{byCur.map((x) => `-${money(x.v, sym(x.c))}`).join(" · ")}</span>
+                <span>{loose.length}건</span>
+              </div>
+            </Go>
+          );
+        })()}
         <Go className="addline" href={`${base}/pocket/new`}>
           <Ic n="plus" /> 예산 포켓 만들기
         </Go>
@@ -308,7 +335,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
     const top = byCat[0];
     const byPocket = [
       ...pockets.map((p) => ({ name: p.name, color: pkStyle(p).color, v: expenses.filter((e) => e.pocket_id === p.id).reduce((s, e) => s + krw(e), 0) })),
-      { name: "포켓 없이", color: "var(--sub)", v: expenses.filter((e) => !e.pocket_id).reduce((s, e) => s + krw(e), 0) },
+      { name: "미지정", color: "var(--sub)", v: expenses.filter((e) => !e.pocket_id).reduce((s, e) => s + krw(e), 0) },
     ].filter((x) => x.v > 0);
     const pmax = Math.max(1, ...byPocket.map((x) => x.v));
     const st = settle(trip, members, expenses, transfers);
