@@ -72,4 +72,4 @@ where e.trip_id = t.id and t.start_date = '2026-10-10' and t.end_date = '2026-10
 -- 들어간 일정 확인
 select e.day, e.time_text, e.title from public.events e join public.trips t on t.id = e.trip_id
 where t.start_date = '2026-10-10' and t.end_date = '2026-10-12'
-order by e.day, coalesce(nullif(split_part(e.time_text, ':', 1), '')::int * 60 + nullif(split_part(e.time_text, ':', 2), '')::int, e.sort);
+order by e.day, e.sort;
