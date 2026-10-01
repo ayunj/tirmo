@@ -53,3 +53,7 @@ textarea.inp{resize:none;line-height:1.6}
 #curTxt{display:inline-flex;align-items:center;gap:6px}
 #curTxt .flag,.dest .flag,.selc .flag{vertical-align:middle;margin:0!important;flex:none}
 .dest{display:inline-flex;align-items:center;gap:6px}
+/* 글꼴: Pretendard (앱 안에 들어 있어서 어느 휴대폰에서나 같게 보여요) */
+:root{--display:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;--note:var(--display);--nscale:1}
+body,input,textarea,select,button{font-family:var(--display)}
+body{letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
