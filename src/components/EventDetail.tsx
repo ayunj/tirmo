@@ -36,7 +36,8 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   const [saved, setSaved] = useState<EventRow>(ev);
   const [busy, setBusy] = useState(false);
   const KEYS = ["title", "category", "day", "time_text", "memo", "address", "link", "booking_id", "wish_id", "photo"] as const;
-  const diff = Object.fromEntries(KEYS.filter((k) => (e[k] ?? null) !== (saved[k] ?? null)).map((k) => [k, e[k] ?? null])) as Partial<EventRow>;
+  const norm = (k: (typeof KEYS)[number], v: unknown) => (typeof v === "string" ? (k === "time_text" ? normTime(v) : v.trim()) || null : v ?? null);
+  const diff = Object.fromEntries(KEYS.filter((k) => norm(k, e[k]) !== norm(k, saved[k])).map((k) => [k, e[k] ?? null])) as Partial<EventRow>;
   const dirty = Object.keys(diff).length > 0;
   function patch(p: Partial<EventRow>) {
     setE((x) => ({ ...x, ...p }));
@@ -45,15 +46,21 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
     if (!dirty || busy) return;
     setBusy(true);
     const row: Record<string, unknown> = { ...diff };
+    for (const k of ["title", "memo", "address", "link"] as const) if (k in row) row[k] = (typeof row[k] === "string" ? (row[k] as string).trim() : row[k]) || (k === "title" ? saved.title : null);
     if ("time_text" in diff) {
       const v = parseTime(diff.time_text);
-      if (v != null) row.sort = v + Math.random() / 100;
+      if (v != null) {
+        row.time_text = normTime(diff.time_text);
+        row.sort = v + Math.random() / 100;
+      }
     }
     const { error } = await createClient().from("events").update(row).eq("id", e.id);
     setBusy(false);
     if (error) return toast("저장하지 못했어요");
     if ("photo" in diff && saved.photo) removePhotos([saved.photo]);
-    setSaved(e);
+    const next = { ...e, ...row } as EventRow;
+    setE(next);
+    setSaved(next);
     toast("저장했어요");
     router.refresh();
   }
@@ -91,10 +98,8 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
     setUp(false);
   }
 
-  const blurSave = (k: keyof EventRow) => (x: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const v = x.target.value.trim() || null;
-    if (v !== (e[k] ?? null)) patch({ [k]: v } as Partial<EventRow>);
-  };
+  /** 쓰는 동안 바로 반영해서 '저장' 버튼이 켜지게 */
+  const typeSave = (k: keyof EventRow) => (x: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => patch({ [k]: x.target.value.trim() ? x.target.value : null } as Partial<EventRow>);
 
   return (
     <section className="screen on" id="place">
@@ -124,11 +129,8 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
               className="ptin"
               autoFocus
               defaultValue={e.title}
-              onBlur={(x) => {
-                setEditTitle(false);
-                const v = x.target.value.trim();
-                if (v && v !== e.title) patch({ title: v });
-              }}
+              onChange={(x) => x.target.value.trim() && patch({ title: x.target.value })}
+              onBlur={() => setEditTitle(false)}
               onKeyDown={(x) => x.key === "Enter" && !x.nativeEvent.isComposing && (x.target as HTMLInputElement).blur()}
             />
           ) : (
@@ -189,12 +191,15 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
               <span className="mp-l">시간</span>
               <div className="inp row tin tinput">
                 <Ic n="clock-3" />
-                <TimeInput className="tedit" value={tm} onChange={setTm} onDone={(v) => v !== (e.time_text ?? "") && patch({ time_text: v || null })} placeholder="예) 1430 → 14:30" style={{ flex: 1, border: 0, outline: 0, background: "none" }} />
+                <TimeInput className="tedit" value={tm} onChange={(v) => {
+                    setTm(v);
+                    patch({ time_text: v || null });
+                  }} onDone={(v) => patch({ time_text: v || null })} placeholder="예) 1430 → 14:30" style={{ flex: 1, border: 0, outline: 0, background: "none" }} />
               </div>
             </div>
             <div className="mp-r top">
               <span className="mp-l">메모</span>
-              <textarea className="mp-memo" defaultValue={e.memo ?? ""} placeholder="가격, 대안, 참고할 점" onBlur={blurSave("memo")} rows={Math.max(2, (e.memo ?? "").split("\n").length)} style={{ border: 0, resize: "none", fontFamily: "inherit" }} />
+              <textarea className="mp-memo" defaultValue={e.memo ?? ""} placeholder="가격, 대안, 참고할 점" onChange={typeSave("memo")} rows={Math.max(2, (e.memo ?? "").split("\n").length)} style={{ border: 0, resize: "none", fontFamily: "inherit" }} />
             </div>
             <div className="mp-foot">
               <span className="mp-del" id="plDel" onClick={remove}>
@@ -206,13 +211,13 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
           <div className="mp2">
             <div className="mp-r first">
               <span className="mp-l">주소</span>
-              <input className="mp-t" defaultValue={e.address ?? ""} placeholder="적어두고 싶으면" onBlur={blurSave("address")} style={{ border: 0, background: "none" }} />
+              <input className="mp-t" defaultValue={e.address ?? ""} placeholder="적어두고 싶으면" onChange={typeSave("address")} style={{ border: 0, background: "none" }} />
             </div>
             <div className="mp-r">
               <span className="mp-l">링크</span>
               <div className="mp-link">
                 <Ic n="link" />
-                <input defaultValue={e.link ?? ""} placeholder="블로그, 예약 페이지" inputMode="url" onBlur={blurSave("link")} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", font: "inherit" }} />
+                <input defaultValue={e.link ?? ""} placeholder="블로그, 예약 페이지" inputMode="url" onChange={typeSave("link")} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", font: "inherit" }} />
                 {e.link && /^https?:\/\//.test(e.link) && (
                   <a href={e.link} target="_blank" rel="noreferrer">
                     <em>열기</em>
