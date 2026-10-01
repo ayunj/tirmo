@@ -140,6 +140,20 @@ export function airportCode(t?: string) {
   return AIRPORTS.find(([k]) => s.includes(k))?.[1] ?? s;
 }
 
+/** 일정 주소로 쓸 공항 이름: '인천 T1' → '인천국제공항 제1터미널', '후쿠오카' → '후쿠오카공항' */
+export function airportName(t?: string) {
+  if (!t) return null;
+  const s = t.trim();
+  if (!s) return null;
+  if (s.includes("공항")) return s;
+  const term = s.match(/T\s*([12])\b|제\s*([12])\s*터미널/i);
+  const tn = term ? ` 제${term[1] || term[2]}터미널` : "";
+  const base = s.replace(/T\s*[12]\b|제\s*[12]\s*터미널/gi, "").trim();
+  if (/인천/.test(base)) return `인천국제공항${tn}`;
+  if (/김포/.test(base)) return `김포국제공항${tn}`;
+  return `${base || s}공항${tn}`;
+}
+
 /** 비행 시간 한국어: 1시간 30분 */
 export function flightKo(a?: string, b?: string) {
   const s = between(a, b);

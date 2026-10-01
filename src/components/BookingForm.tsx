@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { BOOKING_KINDS, bookingTitle, flightKo, sortKey } from "@/lib/booking";
+import { airportName, BOOKING_KINDS, bookingTitle, flightKo, sortKey } from "@/lib/booking";
 import { removePhotos } from "@/lib/photo";
 import { syncFlight } from "@/lib/flightsync";
 import { sym } from "@/lib/money";
@@ -225,7 +225,7 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
         });
         const evs =
           kind === "flight"
-            ? [ev(d.date, d.from_time, `${d.from || "출발"} 출발`, "교통", name), ...(d.to_time ? [{ ...ev(d.date, d.to_time, `${d.to || "도착"} 도착`, "교통", name), move_mode: "flight", move_note: flightKo(d.from_time, d.to_time) || null }] : [])]
+            ? [ev(d.date, d.from_time, `${d.from || "출발"} 출발`, "교통", airportName(d.from) ?? undefined), ...(d.to_time ? [{ ...ev(d.date, d.to_time, `${d.to || "도착"} 도착`, "교통", airportName(d.to) ?? undefined), move_mode: "flight", move_note: flightKo(d.from_time, d.to_time) || null }] : [])]
             : kind === "hotel"
               ? [ev(d.checkin, d.checkin_time, "호텔 체크인", "숙소", name), ev(d.checkout, d.checkout_time, "체크아웃", "숙소", name)]
               : kind === "car"
