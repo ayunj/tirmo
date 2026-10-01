@@ -17,7 +17,7 @@ const KINDS: [Pocket["kind"], IcName, string][] = [
   ["bank", "landmark", "통장"],
 ];
 
-/** 포켓 만들기 · 고치기 (목업 pocketAdd) */
+/** 예산 만들기 · 고치기 (목업 pocketAdd) */
 export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<Trip, "id" | "currency" | "rate" | "rate_unit">; me: string; members: { id: string; nickname: string }[]; pocket?: Pocket }) {
   const router = useRouter();
   const edit = !!pocket;
@@ -47,10 +47,10 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
   }
 
   async function remove() {
-    if (!pocket || !(await askDel(`${pocket.name} 포켓을 지울까요?`, "이 포켓으로 쓴 지출 기록은 남아요"))) return;
+    if (!pocket || !(await askDel(`${pocket.name} 예산을 지울까요?`, "이 예산으로 쓴 지출 기록은 남아요"))) return;
     const { error } = await createClient().from("pockets").delete().eq("id", pocket.id);
     if (error) return toast("지우지 못했어요");
-    toast("포켓을 지웠어요");
+    toast("예산을 지웠어요");
     router.replace(`/trips/${trip.id}/money`);
     router.refresh();
   }
@@ -62,7 +62,7 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
-          <h2>{edit ? "포켓 수정" : "포켓 만들기"}</h2>
+          <h2>{edit ? "예산 수정" : "예산 만들기"}</h2>
         </div>
         <div className="pad">
           <div className="typeg three">
@@ -111,7 +111,7 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
                 ))}
               </select>
             </div>
-            <label>{kind === "cash" ? "예산 (환전한 금액)" : kind === "card" ? "예산 (충전한 금액)" : "예산 · 없으면 비워 둬요"}</label>
+            <label>{kind === "cash" ? "금액 (환전한 금액)" : kind === "card" ? "금액 (충전한 금액)" : "금액 · 없으면 비워 둬요"}</label>
             <div className="inp row">
               <span style={{ display: "flex", alignItems: "baseline", gap: 2, flex: 1 }}>
                 <b style={{ fontSize: 20 }}>{sym(cur).trim()}</b>
@@ -127,7 +127,7 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
           </div>
           {edit && (
             <div className="dellink" onClick={remove}>
-              <Ic n="trash" /> 포켓 삭제
+              <Ic n="trash" /> 예산 삭제
             </div>
           )}
         </div>

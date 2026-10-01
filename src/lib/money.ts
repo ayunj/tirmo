@@ -30,7 +30,7 @@ export function toKrw(amount: number, currency: string, trip: Pick<Trip, "curren
   return c ? (amount * c.rate) / c.unit : amount;
 }
 
-/** 포켓에서 쓴 돈 · 남은 돈 */
+/** 예산에서 쓴 돈 · 남은 돈 */
 export function pocketUse(p: Pocket, list: Expense[], tops: Topup[] = []) {
   const used = list.filter((e) => e.pocket_id === p.id && e.currency === p.currency).reduce((s, e) => s + Number(e.amount), 0);
   const added = tops.filter((t) => t.pocket_id === p.id).reduce((s, t) => s + Number(t.amount), 0);
@@ -81,7 +81,7 @@ export function settle(trip: Pick<Trip, "currency" | "rate" | "rate_unit">, memb
   return { total, paid, owe, moves };
 }
 
-/** 포켓 아이콘 · 색 (목업) */
+/** 예산 아이콘 · 색 (목업) */
 const PK: Record<string, { ic: "banknote" | "credit-card" | "landmark"; c: string; color: string }> = {
   cash: { ic: "banknote", c: "amber", color: "var(--amber)" },
   card: { ic: "credit-card", c: "violet", color: "var(--violet)" },

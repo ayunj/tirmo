@@ -114,7 +114,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
   }
 
   async function remove() {
-    if (!expense || !(await askDel("이 지출을 지울까요?", "포켓 잔액과 정산에서도 빠져요"))) return;
+    if (!expense || !(await askDel("이 지출을 지울까요?", "예산 잔액과 정산에서도 빠져요"))) return;
     const { error } = await createClient().from("expenses").delete().eq("id", expense.id);
     if (error) return toast("지우지 못했어요");
     removePhotos(expense.photos || []);
@@ -186,7 +186,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
 
           {list.length > 0 && (
             <>
-              <label className="flab">어느 포켓에서요?</label>
+              <label className="flab">어느 예산에서요?</label>
               <div className="pkpick">
                 {list.map((p) => {
                   const st = pkStyle(p);
@@ -214,7 +214,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
               </div>
             </>
           )}
-          {shared && <div className="teamnote">공동 포켓에서 빠져요 · 정산 없음</div>}
+          {shared && <div className="teamnote">공동 예산에서 빠져요 · 정산 없음</div>}
 
           <label className="flab">카테고리</label>
           <div className="catg six">

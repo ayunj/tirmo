@@ -93,7 +93,7 @@ export default async function SettlePage({ params }: { params: Promise<{ id: str
           <SettleButtons tripId={id} text={text} moves={moves} />
           {sharedSum > 0 && (
             <div className="tip">
-              <Ic n="users" /> 공동경비 포켓에서 쓴 돈은 이미 같이 낸 돈이라 정산에서 빠져요.
+              <Ic n="users" /> 공동경비 예산에서 쓴 돈은 이미 같이 낸 돈이라 정산에서 빠져요.
             </div>
           )}
         </div>

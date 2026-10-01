@@ -38,7 +38,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
         </div>
         <div className="seg3">
           <Go className={tab === "pocket" ? "on" : ""} href={base} replace>
-            포켓
+            예산
           </Go>
           <Go className={tab === "list" ? "on" : ""} href={`${base}?tab=list`} replace>
             내역
@@ -62,7 +62,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
       <div className="pad" style={{ paddingBottom: 24 }}>
         {main.length > 0 && (
           <div className="bsum">
-            <div className="sub w">{trip.currency === "KRW" ? "포켓 남은 돈" : `${curName} 포켓 남은 돈`}</div>
+            <div className="sub w">{trip.currency === "KRW" ? "예산 남은 돈" : `${curName} 예산 남은 돈`}</div>
             <div className="bs-n">
               {money(tot - used, sym(trip.currency))} {trip.currency !== "KRW" && <span>≈ {money(toKrw(tot - used, trip.currency, trip), "₩")}</span>}
             </div>
@@ -108,7 +108,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
               )}
               <div className="pk-f" style={noBudget ? { marginTop: 8 } : undefined}>
                 {noBudget ? (
-                  <span>예산 없음</span>
+                  <span>금액 없음</span>
                 ) : p.shared && members.length > 1 ? (
                   <>
                     <span className="names xs">
@@ -146,7 +146,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
                 </span>
                 <div className="mid">
                   <b>미지정</b>
-                  <span className="cur k">포켓 없이 쓴 돈</span>
+                  <span className="cur k">예산 없이 쓴 돈</span>
                 </div>
                 <div className="pk-n">
                   <b>{money(sum, "₩")}</b>
@@ -157,7 +157,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
           );
         })()}
         <Go className="addline" href={`${base}/pocket/new`}>
-          <Ic n="plus" /> 예산 포켓 만들기
+          <Ic n="plus" /> 예산 만들기
         </Go>
       </div>
     );
@@ -283,7 +283,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
           ) : (
             <Go href={`${base}/pocket/new`}>
               <span className="sub">남은 돈</span>
-              <b style={{ fontSize: 14, color: "var(--sub)" }}>포켓 만들기</b>
+              <b style={{ fontSize: 14, color: "var(--sub)" }}>예산 만들기</b>
             </Go>
           )}
         </div>
@@ -362,7 +362,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
         </div>
         {byPocket.length > 0 && (
           <>
-            <div className="stt">포켓별</div>
+            <div className="stt">예산별</div>
             <div className="boxc">
               {byPocket.map((x) => (
                 <Fragment key={x.name}>

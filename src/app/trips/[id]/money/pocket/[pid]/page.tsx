@@ -69,8 +69,8 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
                   <Ic n="arrow-down-to-line" />
                 </span>
                 <div className="mid">
-                  <b>처음 예산</b>
-                  <div className="s">포켓 만들 때</div>
+                  <b>처음 금액</b>
+                  <div className="s">예산 만들 때</div>
                 </div>
                 <div className="ea">
                   <b className="plus">+ {money(Number(p.budget), s)}</b>
