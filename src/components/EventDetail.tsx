@@ -9,18 +9,11 @@ import TimeInput from "@/components/ui/TimeInput";
 import { uploadPhoto, removePhotos } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
-import Ic, { type IcName } from "@/components/Ic";
+import Ic from "@/components/Ic";
 import Sheet from "@/components/ui/Sheet";
 import { LinkPick, type LinkOpt } from "@/components/EventForm";
 import type { EventRow } from "@/lib/types";
 
-const MOVES: [string, IcName, string][] = [
-  ["flight", "plane", "비행기"],
-  ["walk", "footprints", "도보"],
-  ["transit", "train-front", "대중교통"],
-  ["taxi", "car-taxi-front", "택시"],
-  ["car", "car", "차"],
-];
 
 type Rec = { id: string; body: string | null; title: string | null; photos: string[]; day: string | null; time_text: string | null };
 
@@ -48,7 +41,10 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
     }
     const { error } = await createClient().from("events").update(p).eq("id", e.id);
     if (error) toast("저장하지 못했어요");
-    else router.refresh();
+    else {
+      toast("저장했어요");
+      router.refresh();
+    }
   }
   // putDay 로 들어왔으면 그 날로 바로 옮겨요
   const [moved, setMoved] = useState(false);
@@ -184,22 +180,6 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
                 <TimeInput className="tedit" value={tm} onChange={setTm} onDone={(v) => v !== (e.time_text ?? "") && patch({ time_text: v || null })} placeholder="예) 1430 → 14:30" style={{ flex: 1, border: 0, outline: 0, background: "none" }} />
               </div>
             </div>
-            <div className="mp-r" id="move">
-              <span className="mp-l">가는 방법</span>
-              <div className="mp-mv" style={{ flexWrap: "wrap" }}>
-                {MOVES.map(([k, n, l]) => (
-                  <span key={k} className={e.move_mode === k ? "on" : ""} onClick={() => patch({ move_mode: e.move_mode === k ? null : k })}>
-                    <Ic n={n} /> {l}
-                  </span>
-                ))}
-              </div>
-            </div>
-            {e.move_mode && (
-              <div className="mp-r">
-                <span className="mp-l" />
-                <input className="mp-t" defaultValue={e.move_note ?? ""} placeholder="예) 공항버스 30분 · ¥500" onBlur={blurSave("move_note")} style={{ border: 0, background: "none" }} />
-              </div>
-            )}
             <div className="mp-r top">
               <span className="mp-l">메모</span>
               <textarea className="mp-memo" defaultValue={e.memo ?? ""} placeholder="가격, 대안, 참고할 점" onBlur={blurSave("memo")} rows={Math.max(2, (e.memo ?? "").split("\n").length)} style={{ border: 0, resize: "none", fontFamily: "inherit" }} />
@@ -227,6 +207,14 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
                   </a>
                 )}
               </div>
+            </div>
+            <div className="mp-r">
+              <span className="mp-l">오는 길</span>
+              <Go className="mp-link" href={`/trips/${tid}/plan/${e.id}/move`}>
+                <Ic n={e.move_mode === "flight" ? "plane" : e.move_mode === "walk" ? "footprints" : e.move_mode === "taxi" ? "car-taxi-front" : e.move_mode === "car" ? "car" : e.move_mode ? "train-front" : "plus"} />
+                <span className={e.move_mode ? "" : "sub"}>{e.move_mode ? [{ flight: "비행기", walk: "도보", transit: "대중교통", taxi: "택시", car: "차" }[e.move_mode], e.move_note].filter(Boolean).join(" · ") : "이동 방법"}</span>
+                <em>{e.move_mode ? "바꾸기" : "선택"}</em>
+              </Go>
             </div>
             <div className="mp-r">
               <span className="mp-l">연결</span>

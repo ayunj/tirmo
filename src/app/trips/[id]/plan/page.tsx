@@ -68,14 +68,14 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
                     <div key={e.id} style={{ display: "contents" }}>
                       {i > 0 &&
                         (e.move_mode ? (
-                          <Go className="gap" href={`${base}/${e.id}#move`}>
+                          <Go className="gap" href={`${base}/${e.id}/move`}>
                             <span className={`mv ${e.move_mode}`}>
                               <Ic n={MOVE_IC[e.move_mode] ?? "footprints"} /> {MOVE_LABEL[e.move_mode]}
                               {e.move_note ? (/^\d/.test(e.move_note) ? " " : " · ") + e.move_note : ""} <Ic n="chevron-right" />
                             </span>
                           </Go>
                         ) : (
-                          <Go className="gap" href={`${base}/${e.id}#move`}>
+                          <Go className="gap" href={`${base}/${e.id}/move`}>
                             <span className="mv none">
                               <Ic n="plus" /> 이동 방법 선택
                             </span>
