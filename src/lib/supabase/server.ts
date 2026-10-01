@@ -23,12 +23,18 @@ export async function createClient() {
   );
 }
 
-/** 로그인한 사람과 프로필. 없으면 null */
-export async function getMe() {
+/** 로그인한 사람 (미들웨어가 이미 확인했으니 쿠키만 읽어요, 왕복 없음) */
+export async function getSessionUser() {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  return { supabase, user: session?.user ?? null };
+}
+
+/** 로그인한 사람과 프로필. 없으면 null */
+export async function getMe() {
+  const { supabase, user } = await getSessionUser();
   if (!user) return { supabase, user: null, profile: null };
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
   return { supabase, user, profile };

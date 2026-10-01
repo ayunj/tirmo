@@ -26,3 +26,6 @@ textarea.inp{resize:none;line-height:1.6}
 .qsheet .inp:not(.tin){background:var(--card);border-radius:14px;padding:14px 15px;font-size:14.5px;border:1px solid var(--line)}
 .qsheet .inp.row{display:flex}
 .wtitle::placeholder{color:#B3B8C0}.wtext::placeholder{color:#ACB0B7}
+/* 불러오는 동안 */
+.skel{border-radius:20px;margin-top:10px;background:linear-gradient(90deg,#E9EDF3 0%,#F3F5F8 50%,#E9EDF3 100%);background-size:200% 100%;animation:skel 1.1s ease-in-out infinite}
+@keyframes skel{from{background-position:100% 0}to{background-position:-100% 0}}
