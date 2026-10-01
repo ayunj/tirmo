@@ -18,7 +18,7 @@ export default async function WishPage({ params, searchParams }: { params: Promi
   return (
     <>
       <LiveRefresh tripId={id} table="wishes" />
-      <WishScreen tripId={id} tab={tab === "shop" ? "shop" : "place"} wishes={(w.data ?? []) as Wish[]} days={days(trip.start_date, trip.end_date)} events={events} planned={planned} />
+      <WishScreen tripId={id} head={trip} tab={tab === "shop" ? "shop" : "place"} wishes={(w.data ?? []) as Wish[]} days={days(trip.start_date, trip.end_date)} events={events} planned={planned} />
     </>
   );
 }

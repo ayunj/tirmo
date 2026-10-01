@@ -2,6 +2,7 @@ import { loadTrip } from "@/lib/trip";
 import { CURRENCIES } from "@/lib/places";
 import { BOOKING_KINDS } from "@/lib/booking";
 import Go from "@/components/Go";
+import TripTitle from "@/components/TripTitle";
 import Ic, { type IcName } from "@/components/Ic";
 import SignOut from "@/components/SignOut";
 
@@ -35,7 +36,7 @@ export default async function MorePage({ params }: { params: Promise<{ id: strin
     <section className="screen on" id="more">
       <div className="scr">
         <div className="hd">
-          <h2 className="big">더보기</h2>
+          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="더보기" />
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="mgrid">

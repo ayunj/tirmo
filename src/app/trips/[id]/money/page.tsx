@@ -4,6 +4,7 @@ import { days, mdLong, parseDate, weekday } from "@/lib/format";
 import { CURRENCIES } from "@/lib/places";
 import { EXP_CATS, expCat, money, pkStyle, pocketUse, settle, sym, toKrw } from "@/lib/money";
 import Go from "@/components/Go";
+import TripTitle from "@/components/TripTitle";
 import Ic, { type IcName } from "@/components/Ic";
 import LiveRefresh from "@/components/LiveRefresh";
 import type { Expense } from "@/lib/types";
@@ -25,10 +26,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
       <LiveRefresh tripId={id} table="pockets" />
       <div className="scr">
         <div className="hd">
-          <Go as="span" className="ib" href={`/trips/${id}`}>
-            <Ic n="chevron-left" />
-          </Go>
-          <h2>경비</h2>
+          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="경비" />
           {tab === "stats" && members.length > 1 && (
             <Go as="span" className="ib" href={`${base}/settle`}>
               <Ic n="arrow-left-right" />

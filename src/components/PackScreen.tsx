@@ -6,15 +6,16 @@ import { createClient } from "@/lib/supabase/client";
 import { PACK_CATS, PACK_IC, PACK_TEMPLATE } from "@/lib/pack";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import TripTitle from "@/components/TripTitle";
 import Ic from "@/components/Ic";
 import Sheet from "@/components/ui/Sheet";
 import type { PackItem } from "@/lib/types";
 
 type Who = { id: string; nickname: string; color: string };
-type Props = { tripId: string; items: PackItem[]; members: Who[]; dleft: string; prev: { title: string; items: { name: string; category: string }[] } | null };
+type Props = { tripId: string; head: { title: string; start_date: string | null; end_date: string | null }; items: PackItem[]; members: Who[]; dleft: string; prev: { title: string; items: { name: string; category: string }[] } | null };
 
 /** 준비물 (목업 pack + packItem 창) */
-export default function PackScreen({ tripId, items, members, dleft, prev }: Props) {
+export default function PackScreen({ tripId, head, items, members, dleft, prev }: Props) {
   const router = useRouter();
   const [list, setList] = useState(items);
   const [was, setWas] = useState(items);
@@ -96,10 +97,7 @@ export default function PackScreen({ tripId, items, members, dleft, prev }: Prop
     <section className="screen on" id="pack">
       <div className="scr">
         <div className="hd">
-          <Go as="span" className="ib" href={`/trips/${tripId}/more`}>
-            <Ic n="chevron-left" />
-          </Go>
-          <h2>준비물</h2>
+          <TripTitle title={head.title} start={head.start_date} end={head.end_date} label="준비물" />
           <span className="ib" id="packPlus" onClick={() => open()}>
             <Ic n="plus" />
           </span>

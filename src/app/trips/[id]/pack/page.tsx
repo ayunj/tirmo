@@ -19,7 +19,7 @@ export default async function PackPage({ params }: { params: Promise<{ id: strin
   return (
     <>
       <LiveRefresh tripId={id} table="pack_items" />
-      <PackScreen tripId={id} items={(data ?? []) as PackItem[]} members={people} dleft={dleft} prev={prev} />
+      <PackScreen tripId={id} head={trip} items={(data ?? []) as PackItem[]} members={people} dleft={dleft} prev={prev} />
     </>
   );
 }

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadPhoto, removePhotos } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import TripTitle from "@/components/TripTitle";
 import Ic from "@/components/Ic";
 import { WISH_KINDS, wishKind } from "@/lib/wish";
 import Sheet from "@/components/ui/Sheet";
@@ -18,10 +19,10 @@ type St = (typeof SEQ)[number];
 const stOf = (s: string | null): St => (s === "done" ? "buy" : SEQ.includes(s as St) ? (s as St) : "todo");
 const StIc = ({ s }: { s: St }) => <i className={`st ${s}`}>{s === "buy" ? <Ic n="check" /> : s === "no" ? <Ic n="x" /> : s === "q" ? "?" : null}</i>;
 
-type Props = { tripId: string; tab: "place" | "shop"; wishes: Wish[]; days: string[]; events: DayEv[]; planned: Record<string, string | null> };
+type Props = { tripId: string; head: { title: string; start_date: string | null; end_date: string | null }; tab: "place" | "shop"; wishes: Wish[]; days: string[]; events: DayEv[]; planned: Record<string, string | null> };
 
 /** 위시리스트 (목업 wish + wishItem · shopItem · planPick 창) */
-export default function WishScreen({ tripId, tab, wishes, days, events, planned }: Props) {
+export default function WishScreen({ tripId, head, tab, wishes, days, events, planned }: Props) {
   const router = useRouter();
   const places = wishes.filter((w) => w.kind === "place");
   const shops = wishes.filter((w) => w.kind === "shop");
@@ -122,10 +123,7 @@ export default function WishScreen({ tripId, tab, wishes, days, events, planned 
     <section className="screen on" id="wish">
       <div className="scr">
         <div className="hd">
-          <Go as="span" className="ib" href={`/trips/${tripId}/more`}>
-            <Ic n="chevron-left" />
-          </Go>
-          <h2>위시리스트</h2>
+          <TripTitle title={head.title} start={head.start_date} end={head.end_date} label="위시리스트" />
           <span className="ib" id="wishPlus" onClick={() => (tab === "shop" ? openShop(null) : openPlace(null))}>
             <Ic n="plus" />
           </span>

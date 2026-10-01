@@ -3,6 +3,7 @@ import { BOOKING_KINDS, nights } from "@/lib/booking";
 import { parseDate } from "@/lib/format";
 import { money, sym } from "@/lib/money";
 import Go from "@/components/Go";
+import TripTitle from "@/components/TripTitle";
 import Ic from "@/components/Ic";
 import LiveRefresh from "@/components/LiveRefresh";
 import { BookingRow, Ticket, statusTag } from "@/components/BookingCards";
@@ -70,10 +71,7 @@ export default async function BookingsPage({ params, searchParams }: { params: P
       <LiveRefresh tripId={id} table="bookings" />
       <div className="scr">
         <div className="hd">
-          <Go as="span" className="ib" href={`/trips/${id}/more`}>
-            <Ic n="chevron-left" />
-          </Go>
-          <h2>예약</h2>
+          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="예약" />
           <Go as="span" className="ib dark" href={`/trips/${id}/bookings/new${k !== "all" ? `?kind=${k}` : ""}`}>
             <Ic n="plus" />
           </Go>

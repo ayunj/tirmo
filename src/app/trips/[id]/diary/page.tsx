@@ -1,6 +1,7 @@
 import { loadTrip } from "@/lib/trip";
 import { days, parseDate, today, weekday } from "@/lib/format";
 import Go from "@/components/Go";
+import TripTitle from "@/components/TripTitle";
 import Ic from "@/components/Ic";
 import LiveRefresh from "@/components/LiveRefresh";
 import WeatherIcon from "@/components/Weather";
@@ -24,10 +25,7 @@ export default async function DiaryPage({ params, searchParams }: { params: Prom
       <LiveRefresh tripId={id} table="entries" />
       <div className="scr">
         <div className="hd">
-          <Go as="span" className="ib" href={`/trips/${id}/more`}>
-            <Ic n="chevron-left" />
-          </Go>
-          <h2>여행 기록</h2>
+          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="여행 기록" />
           <Go as="span" className="ib" href={`${base}/write${sel ? `?day=${sel}` : ""}`}>
             <Ic n="plus" />
           </Go>
