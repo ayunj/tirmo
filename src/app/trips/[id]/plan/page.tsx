@@ -6,6 +6,8 @@ import Ic from "@/components/Ic";
 import LiveRefresh from "@/components/LiveRefresh";
 import type { Booking, EventRow } from "@/lib/types";
 import { syncFlight } from "@/lib/flightsync";
+import { splitMove } from "@/lib/move";
+import { sym } from "@/lib/money";
 
 const WK_LONG = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
@@ -72,11 +74,24 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
                     <div key={e.id} style={{ display: "contents" }}>
                       {i > 0 &&
                         (e.move_mode ? (
-                          <Go className="gap" href={`${base}/${e.id}/move`}>
-                            <span className={`mv ${e.move_mode}`}>
-                              <Ic n={MOVE_IC[e.move_mode] ?? "footprints"} /> {MOVE_LABEL[e.move_mode]}
-                              {e.move_note ? (/^\d/.test(e.move_note) ? " " : " · ") + e.move_note : ""} <Ic n="chevron-right" />
-                            </span>
+                          <Go className="gap" href={`${base}/${e.id}/move`} style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                            {(() => {
+                              const mv = splitMove(e.move_note);
+                              const short = [mv.dur, mv.fare ? (mv.won ? `₩${Number(mv.fare).toLocaleString()}` : `${sym(trip.currency).trim()}${Number(mv.fare).toLocaleString()}`) : ""].filter(Boolean).join(" · ");
+                              return (
+                                <>
+                                  <span className={`mv ${e.move_mode}`}>
+                                    <Ic n={MOVE_IC[e.move_mode] ?? "footprints"} /> {MOVE_LABEL[e.move_mode]}
+                                    {short ? " " + short : ""} <Ic n="chevron-right" />
+                                  </span>
+                                  {mv.memo && (
+                                    <div className="memo note" style={{ marginTop: 4, marginBottom: 4, fontSize: 12.5, alignSelf: "stretch" }}>
+                                      {mv.memo}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </Go>
                         ) : (
                           <Go className="gap" href={`${base}/${e.id}/move`}>

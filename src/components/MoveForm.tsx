@@ -7,6 +7,7 @@ import { normTime } from "@/lib/format";
 import { evCat, MOVE_LABEL } from "@/lib/cats";
 import { sym } from "@/lib/money";
 import { toast } from "@/lib/ui";
+import { splitMove } from "@/lib/move";
 import Go from "@/components/Go";
 import Ic, { type IcName } from "@/components/Ic";
 import type { EventRow, Pocket } from "@/lib/types";
@@ -19,26 +20,12 @@ const MODES: [string, IcName, string][] = [
   ["car", "car", "차"],
 ];
 
-/** move_note '14분 · ¥1,900 · 메모' 를 칸별로 */
-function split(note: string | null) {
-  const out = { dur: "", fare: "", won: false, memo: [] as string[] };
-  for (const p of (note ?? "").split("·").map((x) => x.trim()).filter(Boolean)) {
-    if (!out.fare && /[₩¥$€฿₫]|원$|엔$/.test(p)) {
-      out.fare = p.replace(/[^\d.]/g, "");
-      out.won = /₩|원$/.test(p);
-    }
-    else if (!out.dur && /(\d+\s*(분|시간|h|m))/.test(p)) out.dur = p;
-    else out.memo.push(p);
-  }
-  return { ...out, memo: out.memo.join(" · ") };
-}
-
 type Props = { ev: EventRow; prev: Pick<EventRow, "title" | "time_text" | "category"> | null; currency: string; pockets: Pocket[]; me: string };
 
 /** 이동 방법 (목업 move) */
 export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
   const router = useRouter();
-  const init = split(ev.move_note);
+  const init = splitMove(ev.move_note);
   const [mode, setMode] = useState(ev.move_mode ?? "");
   const [dur, setDur] = useState(init.dur);
   const [fare, setFare] = useState(init.fare);
