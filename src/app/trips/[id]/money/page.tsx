@@ -137,7 +137,6 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
         {(() => {
           const loose = expenses.filter((e) => !e.pocket_id);
           if (!loose.length) return null;
-          const byCur = Array.from(new Set(loose.map((e) => e.currency))).map((c) => ({ c, v: loose.filter((e) => e.currency === c).reduce((x, e) => x + Number(e.amount), 0) }));
           const sum = loose.reduce((x, e) => x + krw(e), 0);
           return (
             <Go className="pocket" href={`${base}?tab=list`}>
@@ -153,10 +152,6 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
                   <b>{money(sum, "₩")}</b>
                   <span>사용</span>
                 </div>
-              </div>
-              <div className="pk-f" style={{ marginTop: 8 }}>
-                <span>{byCur.map((x) => `-${money(x.v, sym(x.c))}`).join(" · ")}</span>
-                <span>{loose.length}건</span>
               </div>
             </Go>
           );
