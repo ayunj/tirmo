@@ -4,7 +4,8 @@ import { evCat, MOVE_IC, MOVE_LABEL } from "@/lib/cats";
 import Go from "@/components/Go";
 import Ic from "@/components/Ic";
 import LiveRefresh from "@/components/LiveRefresh";
-import type { EventRow } from "@/lib/types";
+import type { Booking, EventRow } from "@/lib/types";
+import { syncFlight } from "@/lib/flightsync";
 
 const WK_LONG = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
@@ -16,6 +17,9 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const now = today();
   const sel = day && (ds.includes(day) || day === "none") ? day : ds.includes(now) ? now : ds[0] ?? "none";
 
+  // 예전에 만든 항공권 도착 일정에 '비행' 표시가 없으면 채워 둬요
+  const { data: flights } = await supabase.from("bookings").select("*").eq("trip_id", id).eq("kind", "flight");
+  for (const f of (flights ?? []) as Booking[]) await syncFlight(supabase, f, ds, true);
   const { data } = await supabase.from("events").select("*").eq("trip_id", id).order("sort");
   const all = (data ?? []) as EventRow[];
   const list = all.filter((e) => (sel === "none" ? !e.day : e.day === sel)).sort(byEv);

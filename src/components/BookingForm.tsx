@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BOOKING_KINDS, bookingTitle, flightKo, sortKey } from "@/lib/booking";
 import { removePhotos } from "@/lib/photo";
+import { syncFlight } from "@/lib/flightsync";
 import { sym } from "@/lib/money";
 import { normTime, parseTime } from "@/lib/format";
 import { askDel, toast } from "@/lib/ui";
@@ -180,6 +181,8 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
       if (error) return fail();
       const gone = (booking!.photos || []).filter((p) => !photos.includes(p));
       if (gone.length) removePhotos(gone);
+      // 항공권을 고치면 연결된 출발 · 도착 일정도 맞춰요
+      await syncFlight(supabase, { ...booking!, ...row, details } as Booking, days);
     } else {
       const { data, error } = await supabase.from("bookings").insert(row).select("id").single();
       if (error || !data) return fail();
