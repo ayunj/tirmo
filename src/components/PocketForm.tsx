@@ -7,6 +7,7 @@ import { CURRENCIES } from "@/lib/places";
 import { money, sym, toKrw } from "@/lib/money";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import SaveBar from "@/components/ui/SaveBar";
 import Ic, { type IcName } from "@/components/Ic";
 import type { Pocket, Trip } from "@/lib/types";
 
@@ -27,6 +28,9 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
   const [cur, setCur] = useState(pocket?.currency ?? trip.currency);
   const [budget, setBudget] = useState(pocket ? String(pocket.budget) : "");
   const [busy, setBusy] = useState(false);
+  const snap = JSON.stringify([kind, shared, owner, name, cur, budget]);
+  const [snap0] = useState(snap);
+  const changed = snap !== snap0;
   const label = KINDS.find((k) => k[0] === kind)![2];
   const amt = Number(budget.replace(/,/g, "")) || 0;
   const curs = Array.from(new Set([trip.currency, "KRW", ...Object.keys(CURRENCIES)]));
@@ -52,16 +56,13 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
   }
 
   return (
-    <section className="screen on" id="pocketAdd">
+    <section className="screen on hasbar" id="pocketAdd">
       <div className="scr nonav">
         <div className="hd">
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
           <h2>{edit ? "포켓 고치기" : "포켓 만들기"}</h2>
-          <span className={`txtbtn${busy ? " off" : ""}`} onClick={save}>
-            저장
-          </span>
         </div>
         <div className="pad">
           <div className="typeg three">
@@ -131,6 +132,7 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
           )}
         </div>
       </div>
+      <SaveBar on={!pocket || changed} busy={busy} onSave={save} />
     </section>
   );
 }

@@ -10,6 +10,7 @@ import { sym } from "@/lib/money";
 import { normTime, parseTime } from "@/lib/format";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import SaveBar from "@/components/ui/SaveBar";
 import Ic, { type IcName } from "@/components/Ic";
 import DatePick from "@/components/ui/DatePick";
 import TimeInput from "@/components/ui/TimeInput";
@@ -55,6 +56,9 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
   const [toPack, setToPack] = useState(true);
   const [dp, setDp] = useState<"" | string>("");
   const [busy, setBusy] = useState(false);
+  const snap = JSON.stringify([kind, title, d, status, amount, cur, memo, link, photos]);
+  const [snap0] = useState(snap);
+  const changed = snap !== snap0;
   const [uploading, setUploading] = useState(false);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD({ ...d, [k]: e.target.value });
@@ -257,16 +261,13 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
   const opts = (d.options || "").split(",").filter(Boolean);
 
   return (
-    <section className="screen on" id="bookAdd">
+    <section className="screen on hasbar" id="bookAdd">
       <div className="scr nonav">
         <div className="hd">
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
           <h2>{edit ? "예약 고치기" : "예약 추가"}</h2>
-          <span className={`txtbtn${busy || uploading ? " off" : ""}`} onClick={save}>
-            저장
-          </span>
         </div>
         <div className="pad" style={{ paddingBottom: 28 }}>
           <div className="typeg">
@@ -467,6 +468,7 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
         withTime={!!tk}
         onDone={(a, _b, t) => setD({ ...d, [dk]: a ?? "", ...(tk ? { [tk]: t } : {}) })}
       />
+      <SaveBar on={(!booking || changed) && canSave() && !uploading} busy={busy} onSave={save} />
     </section>
   );
 }

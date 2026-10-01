@@ -8,6 +8,7 @@ import { COVERS, coverDate, coverPair } from "@/lib/cover";
 import { uploadPhoto } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import SaveBar from "@/components/ui/SaveBar";
 import Ic from "@/components/Ic";
 import { Names } from "@/components/TripFlags";
 import Sheet from "@/components/ui/Sheet";
@@ -55,6 +56,9 @@ export default function TripForm({ trip, members = [], recentCountries = [], rec
   const [rateEdit, setRateEdit] = useState(false);
   const [sheet, setSheet] = useState<"" | "place" | "date" | "cur">("");
   const [busy, setBusy] = useState(false);
+  const snap = JSON.stringify([title, color, mode, file?.name ?? "", kind, countries, cities, start, end, cur, rate]);
+  const [snap0] = useState(snap);
+  const changed = snap !== snap0;
 
   // 장소 창
   const [ab, setAb] = useState<"out" | "dom">(kind === "domestic" ? "dom" : "out");
@@ -159,16 +163,13 @@ export default function TripForm({ trip, members = [], recentCountries = [], rec
   const recentC = (recentCountries.length ? recentCountries : ["jp", "th"]).slice(0, 4);
 
   return (
-    <section className={`screen on${edit ? " editmode" : ""}`} id="tripAdd">
+    <section className={`screen on hasbar${edit ? " editmode" : ""}`} id="tripAdd">
       <div className="scr nonav">
         <div className="hd">
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
           <h2>{edit ? "여행 정보 수정" : "새 여행"}</h2>
-          <span className={`txtbtn${busy ? " off" : ""}`} onClick={save}>
-            {busy ? "저장 중" : edit ? "저장" : "만들기"}
-          </span>
         </div>
         <div className="pad">
           <div className="coverpick colorcv" style={pairStyle}>
@@ -520,6 +521,7 @@ export default function TripForm({ trip, members = [], recentCountries = [], rec
           완료
         </div>
       </Sheet>
+      <SaveBar on={(!edit || changed) && !!ok} busy={busy} onSave={save} label={edit ? "저장" : "만들기"} />
     </section>
   );
 }

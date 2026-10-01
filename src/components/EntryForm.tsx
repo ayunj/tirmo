@@ -9,6 +9,7 @@ import { EXP_CATS, sym } from "@/lib/money";
 import { uploadPhoto, removePhotos } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import SaveBar from "@/components/ui/SaveBar";
 import Ic from "@/components/Ic";
 import DatePick from "@/components/ui/DatePick";
 import type { Entry, Pocket } from "@/lib/types";
@@ -39,6 +40,9 @@ export default function EntryForm({ tripId, days, events, entry, defaultDay, def
   const [cat, setCat] = useState("식비");
   const [dp, setDp] = useState(false);
   const [busy, setBusy] = useState(false);
+  const snap = JSON.stringify([day, time, place, eventId, wx, mood, title, body, photos, inPdf, withExp, amt, pk, cat]);
+  const [snap0] = useState(snap);
+  const changed = snap !== snap0;
   const fileRef = useRef<HTMLInputElement>(null);
   const dayEvents = events.filter((e) => e.day === day);
   const no = days.indexOf(day) + 1;
@@ -86,16 +90,13 @@ export default function EntryForm({ tripId, days, events, entry, defaultDay, def
 
   const cur = pockets.find((p) => p.id === pk)?.currency ?? currency;
   return (
-    <section className="screen on" id="write">
+    <section className="screen on hasbar" id="write">
       <div className="scr nonav">
         <div className="hd">
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
           <h2>{edit ? "기록 고치기" : "기록 쓰기"}</h2>
-          <span className={`txtbtn${busy ? " off" : ""}`} id="wSave" onClick={save}>
-            저장
-          </span>
         </div>
         <div className="pad" style={{ paddingBottom: 28 }}>
           <div className="wmeta">
@@ -246,6 +247,7 @@ export default function EntryForm({ tripId, days, events, entry, defaultDay, def
           setEventId("");
         }}
       />
+      <SaveBar on={(!entry || changed) && !!(title.trim() || body.trim() || photos.length) && !loading} busy={busy} onSave={save} />
     </section>
   );
 }

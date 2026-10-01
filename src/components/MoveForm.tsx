@@ -9,6 +9,7 @@ import { sym } from "@/lib/money";
 import { toast } from "@/lib/ui";
 import { splitMove } from "@/lib/move";
 import Go from "@/components/Go";
+import SaveBar from "@/components/ui/SaveBar";
 import Ic, { type IcName } from "@/components/Ic";
 import type { EventRow, Pocket } from "@/lib/types";
 
@@ -35,6 +36,9 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
   const [rec, setRec] = useState(!init.fare);
   const [pk, setPk] = useState(shared?.id ?? "");
   const [busy, setBusy] = useState(false);
+  const snap = JSON.stringify([mode, dur, fare, cur, memo]);
+  const [snap0] = useState(snap);
+  const changed = snap !== snap0;
   const s = sym(cur).trim();
   const curs = Array.from(new Set([currency, "KRW"]));
   const amt = Number(fare.replace(/[^\d.]/g, "")) || 0;
@@ -68,16 +72,13 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
   }
 
   return (
-    <section className="screen on" id="move">
+    <section className="screen on hasbar" id="move">
       <div className="scr nonav">
         <div className="hd">
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
           <h2>이동 방법</h2>
-          <span className={`txtbtn${busy ? " off" : ""}`} onClick={save}>
-            완료
-          </span>
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="fromto">
@@ -170,6 +171,7 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
           )}
         </div>
       </div>
+      <SaveBar on={changed} busy={busy} onSave={save} />
     </section>
   );
 }

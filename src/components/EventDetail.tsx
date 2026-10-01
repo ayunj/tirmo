@@ -286,7 +286,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
 
       <div className="savebar">
         <div className={`bigbtn${dirty ? "" : " off"}`} onClick={save}>
-          {busy ? "저장 중…" : dirty ? "저장" : "저장됨"}
+          {busy ? "저장 중…" : "저장"}
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import { md, nowTime, today } from "@/lib/format";
 import { removePhotos } from "@/lib/photo";
 import { askDel, toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import SaveBar from "@/components/ui/SaveBar";
 import Ic, { type IcName } from "@/components/Ic";
 import DatePick from "@/components/ui/DatePick";
 import PhotoField from "@/components/ui/PhotoField";
@@ -49,6 +50,9 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
   const [shares, setShares] = useState<Record<string, string>>(Object.fromEntries(Object.entries(expense?.split?.shares ?? {}).map(([k, v]) => [k, String(v)])));
   const [dp, setDp] = useState(false);
   const [busy, setBusy] = useState(false);
+  const snap = JSON.stringify([payer, pocketId, cur, amount, cat, title, day, time, memo, photos, splitOn, spm, mode, shares]);
+  const [snap0] = useState(snap);
+  const changed = snap !== snap0;
   const [uploading, setUploading] = useState(false);
 
   const amt = Number(amount.replace(/,/g, "")) || 0;
@@ -122,16 +126,13 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
   const showCats = [...EXP_CATS.map((c) => c.key as string), ...(EXP_CATS.some((c) => c.key === cat) ? [] : [cat])];
 
   return (
-    <section className={`screen on${shared ? " teampay" : ""}${edit ? " editmode" : ""}`} id="moneyAdd">
+    <section className={`screen on hasbar${shared ? " teampay" : ""}${edit ? " editmode" : ""}`} id="moneyAdd">
       <div className="scr nonav">
         <div className="hd">
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
           <h2>{edit ? "지출 고치기" : "지출 쓰기"}</h2>
-          <span className={`txtbtn${busy || uploading ? " off" : ""}`} onClick={save}>
-            저장
-          </span>
         </div>
         <div className="pad">
           <div className="amt">
@@ -337,6 +338,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
           setTime(t);
         }}
       />
+      <SaveBar on={(!edit || changed) && !!amt && !!title.trim() && !uploading} busy={busy} onSave={save} />
     </section>
   );
 }

@@ -9,6 +9,7 @@ import TimeInput from "@/components/ui/TimeInput";
 import { uploadPhoto } from "@/lib/photo";
 import { toast } from "@/lib/ui";
 import Go from "@/components/Go";
+import SaveBar from "@/components/ui/SaveBar";
 import Ic, { type IcName } from "@/components/Ic";
 import Sheet from "@/components/ui/Sheet";
 import type { EventRow } from "@/lib/types";
@@ -122,16 +123,13 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
   const wi = wishes.find((w) => w.id === wishId);
 
   return (
-    <section className="screen on" id="eventAdd">
+    <section className="screen on hasbar" id="eventAdd">
       <div className="scr nonav">
         <div className="hd">
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
           <h2>일정 추가</h2>
-          <span className={`txtbtn${busy ? " off" : ""}`} onClick={save}>
-            저장
-          </span>
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="form" style={{ marginTop: -8 }}>
@@ -356,6 +354,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
       </div>
 
       <LinkPick open={lp} onClose={() => setLp(false)} tab={lt} setTab={setLt} bookings={bookings} wishes={wishes} bookingId={bookingId} wishId={wishId} setBookingId={setBookingId} setWishId={setWishId} />
+      <SaveBar on={!!title.trim()} busy={busy} onSave={save} />
     </section>
   );
 }

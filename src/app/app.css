@@ -45,7 +45,7 @@ textarea.inp{resize:none;line-height:1.6}
 .memo{background:var(--bg)!important;border-left:none!important;color:var(--ink2)!important}
 .mvin::placeholder{font-weight:400;color:#B8BDC4}
 /* 일정 상세 저장 버튼 (아래에 붙어 있음) */
-#place .scr{bottom:84px}
+#place .scr,.screen.hasbar .scr{bottom:84px}
 .savebar{position:absolute;left:0;right:0;bottom:0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);z-index:30}
 .savebar .bigbtn{margin:0}
 .bigbtn.off{opacity:.4;pointer-events:none}
