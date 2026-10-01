@@ -35,3 +35,10 @@ export function coverStyle(trip: Pick<Trip, "cover_color" | "cover_photo">): Rea
   const c = trip.cover_color || "#4DA3FF";
   return { background: `linear-gradient(150deg, ${c}cc, ${c})` };
 }
+
+export function StatusTag({ s }: { s: string | null }) {
+  if (!s) return null;
+  const done = s === "예약 완료";
+  return <span className={`rounded-md px-1.5 py-0.5 text-[11.5px] font-bold ${done ? "bg-[#E4F4EB] text-green" : "bg-[#FFF3DA] text-[#B07400]"}`}>{done ? "확정" : s}</span>;
+}
+

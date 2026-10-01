@@ -41,13 +41,13 @@ export function days(start: string | null, end: string | null) {
 /** D-10, D-DAY, 여행 중, 다녀옴 */
 export function dday(start: string | null, end: string | null) {
   if (!start) return "";
-  const today = parseDate(iso(new Date()));
+  const now = parseDate(today());
   const s = parseDate(start);
   const e = parseDate(end || start);
-  const diff = Math.round((s.getTime() - today.getTime()) / 864e5);
+  const diff = Math.round((s.getTime() - now.getTime()) / 864e5);
   if (diff > 0) return `D-${diff}`;
   if (diff === 0) return "D-DAY";
-  if (today <= e) return "여행 중";
+  if (now <= e) return "여행 중";
   return "다녀옴";
 }
 
@@ -63,4 +63,26 @@ export function timeSort(t: string | null | undefined) {
 
 export function won(n: number) {
   return "₩" + Math.round(n).toLocaleString("ko-KR");
+}
+
+/** 한국 시간 기준 오늘 (서버가 UTC 여도) */
+export function today() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+}
+
+/** 지금 시각 HH:MM (한국 시간) */
+export function nowTime() {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+}
+
+/** 10월 12일 */
+export function mdLong(s: string) {
+  const d = parseDate(s);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
+/** 통화 기호 붙이기: ¥2,400 */
+export function money(n: number, sym: string) {
+  const v = Math.round(n * 100) / 100;
+  return (v < 0 ? "-" : "") + sym + Math.abs(v).toLocaleString("ko-KR");
 }

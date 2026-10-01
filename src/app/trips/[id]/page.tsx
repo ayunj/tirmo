@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Menu, Palette, Plus, Share } from "lucide-react";
 import { loadTrip } from "@/lib/trip";
-import { dday, days, iso, range, md } from "@/lib/format";
+import { dday, days, range, md, today } from "@/lib/format";
 import { catColor } from "@/lib/places";
 import { Flags, NamePill, coverStyle } from "@/components/bits";
 import type { EventRow } from "@/lib/types";
@@ -17,8 +17,8 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   ]);
   const events = (ev.data ?? []) as EventRow[];
   const ds = days(trip.start_date, trip.end_date);
-  const today = iso(new Date());
-  const showDay = ds.includes(today) ? today : ds[0];
+  const now = today();
+  const showDay = ds.includes(now) ? now : ds[0];
   const preview = events
     .filter((e) => e.day === showDay)
     .sort((a, b) => a.sort - b.sort)
@@ -69,8 +69,8 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
           <div className="mt-4 grid grid-cols-3 gap-2">
             {[
               ["일정", events.length, `/trips/${id}/plan`],
-              ["예약", bk.count ?? 0, `/trips/${id}/more`],
-              ["가고싶은곳", wi.count ?? 0, `/trips/${id}/more`],
+              ["예약", bk.count ?? 0, `/trips/${id}/bookings`],
+              ["가고싶은곳", wi.count ?? 0, `/trips/${id}/wish`],
             ].map(([k, v, href]) => (
               <Link key={k as string} href={href as string} className="rounded-2xl bg-bg px-3.5 py-3">
                 <span className="block text-[12.5px] font-semibold text-sub">{k}</span>

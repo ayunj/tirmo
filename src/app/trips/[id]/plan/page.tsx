@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bus, Car, CarTaxiFront, ChevronDown, Footprints, Plus } from "lucide-react";
 import { loadTrip } from "@/lib/trip";
-import { days, iso, md, parseDate, range, weekday } from "@/lib/format";
+import { days, md, parseDate, range, today, weekday } from "@/lib/format";
 import { catColor, MOVES } from "@/lib/places";
 import LiveRefresh from "@/components/LiveRefresh";
 import type { EventRow } from "@/lib/types";
@@ -13,8 +13,8 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const { day } = await searchParams;
   const { supabase, trip } = await loadTrip(id);
   const ds = days(trip.start_date, trip.end_date);
-  const today = iso(new Date());
-  const sel = day ?? (ds.includes(today) ? today : ds[0] ?? "none");
+  const now = today();
+  const sel = day ?? (ds.includes(now) ? now : ds[0] ?? "none");
 
   const { data } = await supabase.from("events").select("*").eq("trip_id", id).order("sort");
   const all = (data ?? []) as EventRow[];
@@ -82,7 +82,10 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
                     <span className="absolute left-[2px] top-[5px] h-3 w-3 rounded-full border-[3px] border-white" style={{ background: catColor(e.category) }} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <b className="block text-base font-semibold">{e.title}</b>
+                    <b className="block text-base font-semibold">
+                      {e.title}
+                      {e.booking_id && <span className="ml-1.5 rounded-md bg-sky-s px-1.5 py-0.5 align-middle text-[11px] font-bold text-sky-d">예약</span>}
+                    </b>
                     {e.address && <span className="s13 block">{e.address}</span>}
                     {e.memo && <span className="mt-2 block whitespace-pre-line rounded-[10px] bg-bg px-3 py-2 text-[13px] leading-relaxed text-ink2">{e.memo}</span>}
                   </span>

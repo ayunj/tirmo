@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bus, Car, CarTaxiFront, Footprints, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { Bus, Car, CarTaxiFront, ChevronRight, Footprints, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CATEGORIES, MOVES } from "@/lib/places";
 import { parseDate, timeSort, weekday } from "@/lib/format";
@@ -10,21 +11,40 @@ import type { EventRow } from "@/lib/types";
 
 const MOVE_ICON = { walk: Footprints, transit: Bus, taxi: CarTaxiFront, car: Car } as const;
 
-type Props = { tripId: string; days: string[]; event?: EventRow; defaultDay?: string };
+type Opt = { id: string; title: string; address?: string | null; link?: string | null };
+type Props = { tripId: string; days: string[]; event?: EventRow; defaultDay?: string; bookings?: Opt[]; wishes?: Opt[]; defaultWish?: string };
 
-export default function EventForm({ tripId, days, event, defaultDay }: Props) {
+export default function EventForm({ tripId, days, event, defaultDay, bookings = [], wishes = [], defaultWish }: Props) {
   const router = useRouter();
   const edit = !!event;
-  const [title, setTitle] = useState(event?.title ?? "");
+  // 위시리스트에서 '+ 일정'으로 들어온 경우 채워 두기
+  const seed = !event && defaultWish ? wishes.find((x) => x.id === defaultWish) : undefined;
+  const [title, setTitle] = useState(event?.title ?? seed?.title ?? "");
   const [cat, setCat] = useState(event?.category ?? "관광지");
   const [day, setDay] = useState<string>(event ? event.day ?? "none" : defaultDay && (days.includes(defaultDay) || defaultDay === "none") ? defaultDay : days[0] ?? "none");
   const [time, setTime] = useState(event?.time_text ?? "");
   const [move, setMove] = useState(event?.move_mode ?? "");
   const [moveNote, setMoveNote] = useState(event?.move_note ?? "");
   const [memo, setMemo] = useState(event?.memo ?? "");
-  const [address, setAddress] = useState(event?.address ?? "");
-  const [link, setLink] = useState(event?.link ?? "");
+  const [address, setAddress] = useState(event?.address ?? seed?.address ?? "");
+  const [link, setLink] = useState(event?.link ?? seed?.link ?? "");
+  const [bookingId, setBookingId] = useState(event?.booking_id ?? "");
+  const [wishId, setWishId] = useState(event?.wish_id ?? seed?.id ?? "");
   const [busy, setBusy] = useState(false);
+
+  function pickBooking(id: string) {
+    setBookingId(id);
+    const b = bookings.find((x) => x.id === id);
+    if (b && !title.trim()) setTitle(b.title);
+  }
+  function pickWish(id: string) {
+    setWishId(id);
+    const w = wishes.find((x) => x.id === id);
+    if (!w) return;
+    if (!title.trim()) setTitle(w.title);
+    if (!address.trim() && w.address) setAddress(w.address);
+    if (!link.trim() && w.link) setLink(w.link);
+  }
 
   const back = `/trips/${tripId}/plan?day=${day}`;
 
@@ -44,6 +64,8 @@ export default function EventForm({ tripId, days, event, defaultDay }: Props) {
       memo: memo.trim() || null,
       address: address.trim() || null,
       link: link.trim() || null,
+      booking_id: bookingId || null,
+      wish_id: wishId || null,
     };
     const { error } = edit ? await supabase.from("events").update(row).eq("id", event!.id) : await supabase.from("events").insert(row);
     setBusy(false);
@@ -135,6 +157,39 @@ export default function EventForm({ tripId, days, event, defaultDay }: Props) {
           <a href={link} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[13px] font-semibold text-sky-d">
             링크 열기
           </a>
+        )}
+
+        {(bookings.length > 0 || wishes.length > 0) && (
+          <>
+            <label className="flab">
+              연결 <span className="font-medium text-sub">선택</span>
+            </label>
+            {bookings.length > 0 && (
+              <select className="inp appearance-none" value={bookingId} onChange={(e) => pickBooking(e.target.value)}>
+                <option value="">예약 연결 안 함</option>
+                {bookings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    예약 · {b.title}
+                  </option>
+                ))}
+              </select>
+            )}
+            {wishes.length > 0 && (
+              <select className="inp mt-2 appearance-none" value={wishId} onChange={(e) => pickWish(e.target.value)}>
+                <option value="">가고싶은곳 연결 안 함</option>
+                {wishes.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    가고싶은곳 · {w.title}
+                  </option>
+                ))}
+              </select>
+            )}
+            {edit && event?.booking_id && event.booking_id === bookingId && (
+              <Link href={`/trips/${tripId}/bookings/${bookingId}`} className="mt-2 flex items-center justify-between rounded-[14px] bg-sky-s px-4 py-3.5 text-[14.5px] font-bold text-sky-d">
+                예약 내용 보기 <ChevronRight size={18} />
+              </Link>
+            )}
+          </>
         )}
 
         {edit && (

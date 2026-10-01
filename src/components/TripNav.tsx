@@ -12,10 +12,11 @@ export default function TripNav({ id }: { id: string }) {
     { href: `${base}/plan`, label: "일정", icon: CalendarDays, on: path.startsWith(`${base}/plan`) },
     { href: `${base}/plan/new`, label: "추가", icon: CirclePlus, on: false },
     { href: `${base}/money`, label: "경비", icon: Wallet, on: path.startsWith(`${base}/money`) },
-    { href: `${base}/more`, label: "더보기", icon: LayoutGrid, on: path.startsWith(`${base}/more`) || path.startsWith(`${base}/invite`) },
+    { href: `${base}/more`, label: "더보기", icon: LayoutGrid, on: ["/more", "/invite", "/bookings", "/pack", "/wish", "/diary"].some((x) => path.startsWith(base + x)) },
   ];
-  // 입력 화면에서는 숨겨요
-  if (/\/plan\/(new|[^/]+)$/.test(path) || path.endsWith("/edit")) return null;
+  // 목록 화면에서만 보여요 (입력 · 상세 화면에서는 숨김)
+  const rest = path.slice(base.length);
+  if (!["", "/plan", "/money", "/more", "/invite", "/bookings", "/pack", "/wish", "/diary"].includes(rest)) return null;
   return (
     <nav className="fixed bottom-0 left-1/2 z-30 flex w-full max-w-[480px] -translate-x-1/2 justify-around border-t border-line bg-white pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5">
       {items.map(({ href, label, icon: Icon, on }) => (
