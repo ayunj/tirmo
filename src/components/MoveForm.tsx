@@ -41,7 +41,7 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
   const changed = snap !== snap0;
   const s = sym(cur).trim();
   const curs = Array.from(new Set([currency, "KRW"]));
-  const amt = Number(fare.replace(/[^\d.]/g, "")) || 0;
+  const amt = mode === "walk" ? 0 : Number(fare.replace(/[^\d.]/g, "")) || 0;
 
   async function save() {
     setBusy(true);
@@ -121,24 +121,26 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
               </span>
               <input className="mvin" value={dur} onChange={(e) => setDur(e.target.value)} placeholder={mode === "flight" ? "1시간 30분" : "14분"} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
             </div>
-            <div className="inp row">
-              <span style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
-                <Ic n="banknote" /> 요금
-              </span>
-              {curs.length > 1 && (
-                <span className="curtg" style={{ flex: "none", marginLeft: 4 }}>
-                  {curs.map((c) => (
-                    <span key={c} className={cur === c ? "on" : ""} onClick={() => setCur(c)} style={{ cursor: "pointer", padding: "4px 10px" }}>
-                      {sym(c).trim()}
-                    </span>
-                  ))}
+            {mode !== "walk" && (
+              <div className="inp row">
+                <span style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
+                  <Ic n="banknote" /> 요금
                 </span>
-              )}
-              <span style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0, justifyContent: "flex-end", fontWeight: 700 }}>
-                {s}
-                <input className="mvin" inputMode="decimal" value={fare} onChange={(e) => setFare(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ width: `${Math.max(1, fare.length) + 1}ch`, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
-              </span>
-            </div>
+                {curs.length > 1 && (
+                  <span className="curtg" style={{ flex: "none", marginLeft: 4 }}>
+                    {curs.map((c) => (
+                      <span key={c} className={cur === c ? "on" : ""} onClick={() => setCur(c)} style={{ cursor: "pointer", padding: "4px 10px" }}>
+                        {sym(c).trim()}
+                      </span>
+                    ))}
+                  </span>
+                )}
+                <span style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0, justifyContent: "flex-end", fontWeight: 700 }}>
+                  {s}
+                  <input className="mvin" inputMode="decimal" value={fare} onChange={(e) => setFare(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ width: `${Math.max(1, fare.length) + 1}ch`, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
+                </span>
+              </div>
+            )}
             <div className="inp row" style={{ alignItems: "flex-start" }}>
               <Ic n="pencil" style={{ marginTop: 3 }} />
               <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={memo ? 3 : 1} placeholder="메모 · 예) 캐리어 때문에 택시" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", resize: "none", font: "inherit", lineHeight: 1.5 }} />
