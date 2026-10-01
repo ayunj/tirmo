@@ -36,7 +36,7 @@ export default async function MorePage({ params }: { params: Promise<{ id: strin
     <section className="screen on" id="more">
       <div className="scr">
         <div className="hd">
-          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="더보기" />
+          <TripTitle id={id} title={trip.title} start={trip.start_date} end={trip.end_date} label="더보기" />
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="mgrid">

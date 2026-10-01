@@ -35,7 +35,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
       <LiveRefresh tripId={id} table="events" />
       <div className="scr">
         <div className="hd">
-          <Go style={{ flex: 1 }} href="/">
+          <Go style={{ flex: 1 }} href={`/trips/${id}`}>
             <h2>
               {trip.title} <Ic n="chevron-down" />
             </h2>

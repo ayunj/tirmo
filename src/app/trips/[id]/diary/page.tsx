@@ -25,7 +25,7 @@ export default async function DiaryPage({ params, searchParams }: { params: Prom
       <LiveRefresh tripId={id} table="entries" />
       <div className="scr">
         <div className="hd">
-          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="여행 기록" />
+          <TripTitle id={id} title={trip.title} start={trip.start_date} end={trip.end_date} label="여행 기록" />
           <Go as="span" className="ib" href={`${base}/write${sel ? `?day=${sel}` : ""}`}>
             <Ic n="plus" />
           </Go>

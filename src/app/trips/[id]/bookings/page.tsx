@@ -71,7 +71,7 @@ export default async function BookingsPage({ params, searchParams }: { params: P
       <LiveRefresh tripId={id} table="bookings" />
       <div className="scr">
         <div className="hd">
-          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="예약" />
+          <TripTitle id={id} title={trip.title} start={trip.start_date} end={trip.end_date} label="예약" />
           <Go as="span" className="ib dark" href={`/trips/${id}/bookings/new${k !== "all" ? `?kind=${k}` : ""}`}>
             <Ic n="plus" />
           </Go>

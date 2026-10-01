@@ -123,7 +123,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
     <section className="screen on" id="wish">
       <div className="scr">
         <div className="hd">
-          <TripTitle title={head.title} start={head.start_date} end={head.end_date} label="위시리스트" />
+          <TripTitle id={tripId} title={head.title} start={head.start_date} end={head.end_date} label="위시리스트" />
           <span className="ib" id="wishPlus" onClick={() => (tab === "shop" ? openShop(null) : openPlace(null))}>
             <Ic n="plus" />
           </span>

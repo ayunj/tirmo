@@ -26,7 +26,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
       <LiveRefresh tripId={id} table="pockets" />
       <div className="scr">
         <div className="hd">
-          <TripTitle title={trip.title} start={trip.start_date} end={trip.end_date} label="경비" />
+          <TripTitle id={id} title={trip.title} start={trip.start_date} end={trip.end_date} label="경비" />
           {tab === "stats" && members.length > 1 && (
             <Go as="span" className="ib" href={`${base}/settle`}>
               <Ic n="arrow-left-right" />

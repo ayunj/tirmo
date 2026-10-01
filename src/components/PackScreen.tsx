@@ -97,7 +97,7 @@ export default function PackScreen({ tripId, head, items, members, dleft, prev }
     <section className="screen on" id="pack">
       <div className="scr">
         <div className="hd">
-          <TripTitle title={head.title} start={head.start_date} end={head.end_date} label="준비물" />
+          <TripTitle id={tripId} title={head.title} start={head.start_date} end={head.end_date} label="준비물" />
           <span className="ib" id="packPlus" onClick={() => open()}>
             <Ic n="plus" />
           </span>
