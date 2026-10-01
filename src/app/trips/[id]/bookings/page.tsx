@@ -20,17 +20,14 @@ function HotelCard({ b, tid }: { b: Booking; tid: string }) {
   const n = nights(d.checkin, d.checkout);
   return (
     <Go className="hotelc" href={`/trips/${tid}/bookings/${b.id}`}>
-      <div className="hc-p ctile" style={{ "--c1": "#EAF4FF", "--c2": "#D6E9FF", color: "#2B7FE0", fontSize: 34 } as React.CSSProperties}>
-        {b.photos?.[0] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="im" src={b.photos[0]} alt="" />
-        ) : (
-          <Ic n="bed-double" />
-        )}
-        <span style={{ position: "absolute", left: 10, top: 10 }}>{statusTag(b.status)}</span>
-      </div>
       <div className="hc-b">
-        <b>{b.title}</b>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <span className="evi violet" style={{ width: 36, height: 36, borderRadius: 11, display: "grid", placeItems: "center", flex: "none", fontSize: 18 }}>
+            <Ic n="bed-double" />
+          </span>
+          <b style={{ flex: 1, fontSize: 15, lineHeight: 1.35, paddingTop: 1 }}>{b.title}</b>
+          {statusTag(b.status)}
+        </div>
         <div className="hc-g">
           <div>
             <span>체크인</span>

@@ -63,12 +63,7 @@ export function BookingRow({ b, tid }: { b: Booking; tid: string }) {
   return (
     <Go className="bkrow" href={`/trips/${tid}/bookings/${b.id}`}>
       <div className="th ctile" style={{ "--c1": "#EAF4FF", "--c2": "#D6E9FF", color: "#2B7FE0", fontSize: 22 } as React.CSSProperties}>
-        {b.photos?.[0] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="im" src={b.photos[0]} alt="" />
-        ) : (
-          <Ic n={ic} />
-        )}
+        <Ic n={ic} />
       </div>
       <div className="mid">
         <b>{b.title}</b>

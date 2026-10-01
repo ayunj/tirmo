@@ -184,11 +184,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
   return (
     <section className="screen on" id="bookHotel">
       <div className="scr full nonav">
-        <div className={`hero${b.photos?.[0] ? "" : " noimg k-blue"}`} style={{ height: b.photos?.[0] ? 260 : 200 }}>
-          {b.photos?.[0] && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className="im" src={b.photos[0]} alt="" />
-          )}
+        <div className="hero noimg k-blue" style={{ height: 200 }}>
           <div className="hero-ic">
             <Ic n={KIND_IC[b.kind]} />
           </div>
