@@ -66,8 +66,10 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               <Ic n="plane" />
             </div>
             <div className="disp cc-t">{trip.title}</div>
-            <div className="cc-d">{coverDate(trip.start_date, trip.end_date)}</div>
-            <CvFlags trip={trip} />
+            <div className="cc-d cc-row">
+              <span>{coverDate(trip.start_date, trip.end_date)}</span>
+              <CvFlags trip={trip} />
+            </div>
           </div>
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>

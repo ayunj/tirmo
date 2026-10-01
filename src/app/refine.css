@@ -30,3 +30,11 @@ b,strong{font-weight:600}
 .tag{font-weight:600}
 .mini3 b{font-weight:700}
 .sub,.s{color:#8B929B}
+
+/* 여행 홈 커버: 날짜 옆 작은 국기 */
+.cc-d.cc-row{display:flex;align-items:center;gap:8px}
+.cc-row .cvflags{margin:0!important;gap:0}
+.cc-row .cvflags .flag{width:18px!important;height:13.5px!important;border-radius:3px!important;border:none!important;box-shadow:0 0 0 1px rgba(255,255,255,.55)!important;margin-left:4px!important;background-size:cover}
+.cc-row .cvflags .flag:first-child{margin-left:0!important}
+.cc-row .cvflags .more{min-width:0;height:auto;background:none;border:none;color:#fff;font-size:12px;font-weight:600;margin-left:4px;padding:0}
+.cc-row .cvflags .cvcity{font-size:12px;padding:2px 8px}
