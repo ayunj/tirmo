@@ -1,6 +1,4 @@
--- 후쿠오카 10/10~10/12 일정 한 번에 넣기
--- Supabase → SQL Editor 에 통째로 붙여넣고 Run
--- 예약에서 이미 만들어진 비행기·체크인 일정은 건드리지 않고, 같은 날 같은 시간(또는 같은 이름) 일정이 있으면 건너뛰어요.
+;
 
 with t as (
   select id from public.trips
@@ -8,7 +6,6 @@ with t as (
   order by created_at desc limit 1
 ),
 v(day, time_text, sort, title, category, memo, move_mode, move_note) as (values
-  -- ───────── 1일차 10/10 ─────────
   ('2026-10-10'::date, '07:30', 450, '집에서 출발', '교통', null, null, null),
   ('2026-10-10', null, 600, '공항에서 밥 먹기', '음식점', '면세품 찾기', 'car', '제1터미널 제주항공'),
   ('2026-10-10', null, 855, '텐진역 도착', '교통', null, 'transit',
@@ -24,7 +21,6 @@ v(day, time_text, sort, title, category, memo, move_mode, move_note) as (values
   ('2026-10-10', null, 1290, '바 린사스', '음식점', null, null, null),
   ('2026-10-10', null, 1320, '호텔', '숙소', null, null, null),
 
-  -- ───────── 2일차 10/11 ─────────
   ('2026-10-11', null, 480, '아침 · 편의점', '음식점', null, null, null),
   ('2026-10-11', null, 720, '점심 · 함바그 or 우오츄', '음식점', null, null, null),
   ('2026-10-11', null, 840, '카페', '카페', null, null, null),
@@ -36,7 +32,6 @@ v(day, time_text, sort, title, category, memo, move_mode, move_note) as (values
   ('2026-10-11', null, 1230, '신지다이 텐진점', '음식점', null, null, null),
   ('2026-10-11', null, 1320, '호텔', '숙소', null, null, null),
 
-  -- ───────── 3일차 10/12 ─────────
   ('2026-10-12', '08:40', 520, '체크아웃', '숙소', '캐리어 프런트에 보관 · 08:50 호텔 출발', null, null),
   ('2026-10-12', '09:00', 540, '오니기리 고리짱 텐진', '음식점', '아침 · 09:00~09:35', 'walk', '10분'),
   ('2026-10-12', '09:50', 590, '니시테츠 후쿠오카(텐진)역 탑승', '교통', '09:50~10:00 전후 니시테츠 전철', 'walk', '15분'),
@@ -63,13 +58,11 @@ where not exists (
     and (e.title = v.title or (v.time_text is not null and e.time_text = v.time_text))
 );
 
--- 예약에서 만든 '호텔 체크인'(10/10)까지는 텐진역에서 걸어서 가요
 update public.events e set move_mode = 'walk', move_note = '10분 · 텐진역에서 도보 8~10분'
 from public.trips t
 where e.trip_id = t.id and t.start_date = '2026-10-10' and t.end_date = '2026-10-12'
   and e.day = '2026-10-10' and e.title = '호텔 체크인' and e.move_mode is null;
 
--- 들어간 일정 확인
 select e.day, e.time_text, e.title from public.events e join public.trips t on t.id = e.trip_id
 where t.start_date = '2026-10-10' and t.end_date = '2026-10-12'
 order by e.day, e.sort;
