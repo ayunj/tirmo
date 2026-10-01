@@ -21,9 +21,12 @@ const MODES: [string, IcName, string][] = [
 
 /** move_note '14분 · ¥1,900 · 메모' 를 칸별로 */
 function split(note: string | null) {
-  const out = { dur: "", fare: "", memo: [] as string[] };
+  const out = { dur: "", fare: "", won: false, memo: [] as string[] };
   for (const p of (note ?? "").split("·").map((x) => x.trim()).filter(Boolean)) {
-    if (!out.fare && /[₩¥$€฿₫]|원$|엔$/.test(p)) out.fare = p.replace(/[^\d.]/g, "");
+    if (!out.fare && /[₩¥$€฿₫]|원$|엔$/.test(p)) {
+      out.fare = p.replace(/[^\d.]/g, "");
+      out.won = /₩|원$/.test(p);
+    }
     else if (!out.dur && /(\d+\s*(분|시간|h|m))/.test(p)) out.dur = p;
     else out.memo.push(p);
   }
@@ -39,12 +42,14 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
   const [mode, setMode] = useState(ev.move_mode ?? "");
   const [dur, setDur] = useState(init.dur);
   const [fare, setFare] = useState(init.fare);
+  const [cur, setCur] = useState(init.won ? "KRW" : currency);
   const [memo, setMemo] = useState(init.memo);
   const shared = pockets.find((p) => p.shared && p.currency === currency) ?? pockets.find((p) => p.shared);
-  const [rec, setRec] = useState(!init.fare && pockets.length > 0);
+  const [rec, setRec] = useState(!init.fare);
   const [pk, setPk] = useState(shared?.id ?? "");
   const [busy, setBusy] = useState(false);
-  const s = sym(currency).trim();
+  const s = sym(cur).trim();
+  const curs = Array.from(new Set([currency, "KRW"]));
   const amt = Number(fare.replace(/[^\d.]/g, "")) || 0;
 
   async function save() {
@@ -57,13 +62,13 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
       return toast("저장하지 못했어요");
     }
     if (rec && amt && !init.fare) {
-      const p = pockets.find((x) => x.id === pk);
+      const p = pockets.find((x) => x.id === pk && x.currency === cur);
       await supabase.from("expenses").insert({
         trip_id: ev.trip_id,
         pocket_id: p?.id ?? null,
         payer_id: p?.shared ? null : p?.owner_id ?? me,
         amount: amt,
-        currency: p?.currency ?? currency,
+        currency: cur,
         category: "교통",
         title: `${MOVE_LABEL[mode] ?? "이동"} · ${ev.title}`,
         day: ev.day,
@@ -124,17 +129,26 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
           <div className="form tight">
             <div className="inp row">
               <span style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
-                <Ic n="clock-3" /> 걸린 시간
+                <Ic n="clock-3" /> 이동 시간
               </span>
-              <input value={dur} onChange={(e) => setDur(e.target.value)} placeholder={mode === "flight" ? "1시간 30분" : "14분"} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
+              <input className="mvin" value={dur} onChange={(e) => setDur(e.target.value)} placeholder={mode === "flight" ? "1시간 30분" : "14분"} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
             </div>
             <div className="inp row">
               <span style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
                 <Ic n="banknote" /> 요금
               </span>
+              {curs.length > 1 && (
+                <span className="curtg" style={{ flex: "none", marginLeft: 4 }}>
+                  {curs.map((c) => (
+                    <span key={c} className={cur === c ? "on" : ""} onClick={() => setCur(c)} style={{ cursor: "pointer", padding: "4px 10px" }}>
+                      {sym(c).trim()}
+                    </span>
+                  ))}
+                </span>
+              )}
               <span style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0, justifyContent: "flex-end", fontWeight: 700 }}>
                 {s}
-                <input inputMode="decimal" value={fare} onChange={(e) => setFare(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ width: `${Math.max(1, fare.length) + 1}ch`, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
+                <input className="mvin" inputMode="decimal" value={fare} onChange={(e) => setFare(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ width: `${Math.max(1, fare.length) + 1}ch`, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
               </span>
             </div>
             <div className="inp row">
@@ -142,7 +156,7 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
               <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="메모 · 예) 캐리어 때문에 택시" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none" }} />
             </div>
           </div>
-          {!init.fare && amt > 0 && pockets.length > 0 && (
+          {!init.fare && amt > 0 && (
             <>
               <div className="switches">
                 <div onClick={() => setRec(!rec)} style={{ cursor: "pointer" }}>
@@ -153,11 +167,16 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
               </div>
               {rec && (
                 <div className="chips flush">
-                  {pockets.map((p) => (
-                    <span key={p.id} className={`chip${pk === p.id ? " on" : ""}`} onClick={() => setPk(p.id)}>
-                      {p.name}
-                    </span>
-                  ))}
+                  <span className={`chip${!pockets.some((p) => p.id === pk && p.currency === cur) ? " on" : ""}`} onClick={() => setPk("")}>
+                    내가 냄
+                  </span>
+                  {pockets
+                    .filter((p) => p.currency === cur)
+                    .map((p) => (
+                      <span key={p.id} className={`chip${pk === p.id ? " on" : ""}`} onClick={() => setPk(p.id)}>
+                        {p.name}
+                      </span>
+                    ))}
                 </div>
               )}
             </>

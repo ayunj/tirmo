@@ -43,3 +43,4 @@ textarea.inp{resize:none;line-height:1.6}
 .tin{min-width:0}.tin input{min-width:0;width:100%}.mp-r>*{min-width:0}
 /* 일정 메모: 파란 줄 · 파란 배경 없이 */
 .memo{background:var(--bg)!important;border-left:none!important;color:var(--ink2)!important}
+.mvin::placeholder{font-weight:400;color:#B8BDC4}
