@@ -62,6 +62,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
     setE(next);
     setSaved(next);
     toast("저장했어요");
+    router.replace(`/trips/${tid}/plan?day=${next.day ?? "none"}`);
     router.refresh();
   }
   /** 링크를 누를 때 저장 안 한 게 있으면 막고 물어보기 */
