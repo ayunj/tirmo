@@ -151,9 +151,9 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
                 <input className="mvin" inputMode="decimal" value={fare} onChange={(e) => setFare(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ width: `${Math.max(1, fare.length) + 1}ch`, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
               </span>
             </div>
-            <div className="inp row">
-              <Ic n="pencil" />
-              <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="메모 · 예) 캐리어 때문에 택시" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none" }} />
+            <div className="inp row" style={{ alignItems: "flex-start" }}>
+              <Ic n="pencil" style={{ marginTop: 3 }} />
+              <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={memo ? 3 : 1} placeholder="메모 · 예) 캐리어 때문에 택시" style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", resize: "none", font: "inherit", lineHeight: 1.5 }} />
             </div>
           </div>
           {!init.fare && amt > 0 && (

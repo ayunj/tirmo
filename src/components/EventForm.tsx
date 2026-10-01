@@ -48,7 +48,8 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
   const [time, setTime] = useState("");
   const [slot, setSlot] = useState<number | null>(null);
   const [move, setMove] = useState("");
-  const [moveNote, setMoveNote] = useState("");
+  const [moveDur, setMoveDur] = useState("");
+  const [moveMemo, setMoveMemo] = useState("");
   const [address, setAddress] = useState(seed?.address ?? "");
   const [memo, setMemo] = useState("");
   const [link, setLink] = useState(seed?.link ?? "");
@@ -92,7 +93,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
         time_text: time.trim() ? normTime(time) : null,
         sort,
         move_mode: move || null,
-        move_note: moveNote.trim() || null,
+        move_note: move ? [moveDur.trim(), moveMemo.trim()].filter(Boolean).join(" · ") || null : null,
         memo: memo.trim() || null,
         address: address.trim() || null,
         link: link.trim() || null,
@@ -275,7 +276,20 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
               </div>
             ))}
           </div>
-          {move && <input className="inp" style={{ marginTop: 8 }} value={moveNote} onChange={(e) => setMoveNote(e.target.value)} placeholder={move === "flight" ? "예) 1시간 30분 · 7C1471" : "예) 공항버스 30분 · ¥500"} />}
+          {move && (
+            <div className="form tight" style={{ marginTop: 8 }}>
+              <div className="inp row">
+                <span style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
+                  <Ic n="clock-3" /> 이동 시간
+                </span>
+                <input value={moveDur} onChange={(e) => setMoveDur(e.target.value)} placeholder={move === "flight" ? "1시간 30분" : "30분"} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", textAlign: "right", fontWeight: 700 }} />
+              </div>
+              <div className="inp row" style={{ alignItems: "flex-start" }}>
+                <Ic n="pencil" style={{ marginTop: 3 }} />
+                <textarea value={moveMemo} onChange={(e) => setMoveMemo(e.target.value)} rows={moveMemo ? 3 : 1} placeholder={move === "flight" ? "이동 메모 · 예) 7C1471, 2터미널" : "이동 메모 · 예) 1인 ¥500, 교통카드 ¥480"} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "none", resize: "none", font: "inherit", lineHeight: 1.5 }} />
+              </div>
+            </div>
+          )}
 
           <div className="form tight">
             <div className="inp row">
