@@ -10,12 +10,12 @@ import type { Entry } from "@/lib/types";
 export default async function DiaryPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string }> }) {
   const { id } = await params;
   const { day } = await searchParams;
-  const { supabase, trip } = await loadTrip(id);
+  const { supabase, trip, user } = await loadTrip(id);
   const ds = days(trip.start_date, trip.end_date);
   const now = today();
   const sel = day && ds.includes(day) ? day : ds.includes(now) ? now : ds[0];
   const i = ds.indexOf(sel);
-  const { data } = await supabase.from("entries").select("*").eq("trip_id", id).order("day").order("time_text", { nullsFirst: false }).order("created_at");
+  const { data } = await supabase.from("entries").select("*").eq("trip_id", id).eq("created_by", user.id).order("day").order("time_text", { nullsFirst: false }).order("created_at");
   const list = ((data ?? []) as Entry[]).filter((e) => e.day === sel || (!sel && !e.day));
   const d = sel ? parseDate(sel) : null;
   const base = `/trips/${id}/diary`;

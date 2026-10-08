@@ -10,8 +10,8 @@ import type { Entry } from "@/lib/types";
 
 export default async function EntryView({ params }: { params: Promise<{ id: string; did: string }> }) {
   const { id, did } = await params;
-  const { supabase, trip, members } = await loadTrip(id);
-  const { data } = await supabase.from("entries").select("*").eq("id", did).eq("trip_id", id).maybeSingle();
+  const { supabase, trip, members, user } = await loadTrip(id);
+  const { data } = await supabase.from("entries").select("*").eq("id", did).eq("trip_id", id).eq("created_by", user.id).maybeSingle();
   if (!data) notFound();
   const e = data as Entry;
   const ds = days(trip.start_date, trip.end_date);

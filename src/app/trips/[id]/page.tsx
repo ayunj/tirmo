@@ -19,7 +19,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
     supabase.from("pack_items").select("done").eq("trip_id", id).or(`assignee.eq.${user.id},assignee.is.null`),
     supabase.from("pockets").select("*").eq("trip_id", id),
     supabase.from("expenses").select("*").eq("trip_id", id),
-    supabase.from("entries").select("id", { count: "exact", head: true }).eq("trip_id", id),
+    supabase.from("entries").select("id", { count: "exact", head: true }).eq("trip_id", id).eq("created_by", user.id),
   ]);
   const events = (ev.data ?? []) as EventRow[];
   const bookings = (bk.data ?? []) as Booking[];

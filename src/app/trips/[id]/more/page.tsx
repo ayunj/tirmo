@@ -13,7 +13,7 @@ export default async function MorePage({ params }: { params: Promise<{ id: strin
     supabase.from("bookings").select("kind").eq("trip_id", id),
     supabase.from("pack_items").select("done").eq("trip_id", id).or(`assignee.eq.${user.id},assignee.is.null`),
     supabase.from("wishes").select("kind").eq("trip_id", id),
-    supabase.from("entries").select("photos").eq("trip_id", id),
+    supabase.from("entries").select("photos").eq("trip_id", id).eq("created_by", user.id),
     supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle(),
   ]);
   const kinds = BOOKING_KINDS.map((k) => [k.short, (bk.data ?? []).filter((b) => b.kind === k.key).length] as const).filter(([, n]) => n);
