@@ -38,3 +38,22 @@ b,strong{font-weight:600}
 .cc-row .cvflags .flag:first-child{margin-left:0!important}
 .cc-row .cvflags .more{min-width:0;height:auto;background:none;border:none;color:#fff;font-size:12px;font-weight:600;margin-left:4px;padding:0}
 .cc-row .cvflags .cvcity{font-size:12px;padding:2px 8px}
+
+/* 일정 순서 변경 */
+.ordbtn{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--brand-t);background:var(--brand-s);padding:5px 10px;border-radius:999px;cursor:pointer}
+.ordbtn svg{width:14px;height:14px}
+.olist{background:var(--card);border-radius:16px;padding:4px 6px}
+.orow{display:flex;align-items:center;gap:10px;padding:10px 6px;border-top:1px solid var(--line);background:var(--card);border-radius:12px;transition:box-shadow .12s,background .12s}
+.orow:first-child{border-top:none}
+.orow .on-n{width:18px;text-align:center;font-size:12px;font-weight:800;color:var(--sub);flex:none}
+.orow .mid{flex:1;min-width:0}
+.orow .mid b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orow .mid .s{font-size:12px;color:var(--sub);margin-top:2px}
+.orow .grip{font-style:normal;display:grid;place-items:center;width:40px;height:40px;margin:-8px -4px -8px 0;color:#AEB6C0;font-size:18px;touch-action:none;cursor:grab;flex:none}
+.orow.on{background:var(--brand-s);box-shadow:0 6px 18px rgba(0,0,0,.12);border-top-color:transparent;position:relative;z-index:1}
+.orow.on .grip,.orow.on .on-n{color:var(--brand-t)}
+.orow.on + .orow{border-top-color:transparent}
+.olist.dragging{user-select:none;-webkit-user-select:none}
+.olist.dragging .grip{cursor:grabbing}
+.orow .evi{width:34px;height:34px;border-radius:10px;font-size:16px}
+.dayhead{align-items:center}

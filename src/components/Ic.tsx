@@ -1,11 +1,12 @@
 import {
- ArrowDownToLine, ArrowLeftRight, ArrowRight, ArrowUpRight, Banknote, BedDouble, Bell, BookOpen, Bookmark, Bus, CalendarClock, CalendarDays, CalendarPlus, Camera, Car, CarTaxiFront, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, Clock3, Cloud, CloudRain, CloudSun, Coffee, Copy, CreditCard, Download, Droplets, Ellipsis, ExternalLink, Eye, FileCheck, FileText, Folder, Footprints, GripVertical, Hash, Heart, House, Image, ImagePlus, Images, Landmark, LayoutGrid, Link, Link2, LogOut, Luggage, MapPin, Menu, MessageCircle, Moon, NotebookPen, Palette, Pencil, Phone, Pin, Plane, PlaneLanding, PlaneTakeoff, Plug, Plus, QrCode, Receipt, Repeat, Search, Send, Share, Share2, Shirt, ShoppingBag, SlidersHorizontal, Smile, Snowflake, Sparkles, SquarePen, Sun, Sunrise, Ticket, TrainFront, Trash, Undo2, UserRound, Users, Utensils, Wallet, X,
+ ArrowDownToLine, ArrowLeftRight, ArrowRight, ArrowUpDown, ArrowUpRight, Banknote, BedDouble, Bell, BookOpen, Bookmark, Bus, CalendarClock, CalendarDays, CalendarPlus, Camera, Car, CarTaxiFront, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, CircleCheck, Clock3, Cloud, CloudRain, CloudSun, Coffee, Copy, CreditCard, Download, Droplets, Ellipsis, ExternalLink, Eye, FileCheck, FileText, Folder, Footprints, GripVertical, Hash, Heart, House, Image, ImagePlus, Images, Landmark, LayoutGrid, Link, Link2, LogOut, Luggage, MapPin, Menu, MessageCircle, Moon, NotebookPen, Palette, Pencil, Phone, Pin, Plane, PlaneLanding, PlaneTakeoff, Plug, Plus, QrCode, Receipt, Repeat, Search, Send, Share, Share2, Shirt, ShoppingBag, SlidersHorizontal, Smile, Snowflake, Sparkles, SquarePen, Sun, Sunrise, Ticket, TrainFront, Trash, Undo2, UserRound, Users, Utensils, Wallet, X,
 } from "lucide-react";
 
 const M = {
   "arrow-down-to-line": ArrowDownToLine,
   "arrow-left-right": ArrowLeftRight,
   "arrow-right": ArrowRight,
+  "arrow-up-down": ArrowUpDown,
   "arrow-up-right": ArrowUpRight,
   "banknote": Banknote,
   "bed-double": BedDouble,
@@ -20,6 +21,7 @@ const M = {
   "car-taxi-front": CarTaxiFront,
   "check": Check,
   "chevron-down": ChevronDown,
+  "chevron-up": ChevronUp,
   "chevron-left": ChevronLeft,
   "chevron-right": ChevronRight,
   "circle-check": CircleCheck,

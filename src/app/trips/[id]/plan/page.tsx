@@ -63,7 +63,13 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           <div className="dayblk on">
             <div className="dayhead">
               <b>{d ? `DAY ${no} · ${d.getMonth() + 1}월 ${d.getDate()}일 ${WK_LONG[d.getDay()]}` : "날짜 미정"}</b>
-              <span className="sub">{list.length}개 일정</span>
+              {list.length > 1 ? (
+                <Go as="span" className="ordbtn" href={`${base}/order?day=${sel}`}>
+                  <Ic n="arrow-up-down" /> 순서 변경
+                </Go>
+              ) : (
+                <span className="sub">{list.length}개 일정</span>
+              )}
             </div>
             {list.length > 0 ? (
               <div className="tl">
