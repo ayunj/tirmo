@@ -288,7 +288,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
           ))}
         </div>
         <label className="flab">메모</label>
-        <input className="inp wi-f" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="동네, 먹을 것, 영업시간" />
+        <textarea className="inp wi-f wi-memo" rows={3} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="동네, 먹을 것, 영업시간" />
         <label className="flab">링크</label>
         <div className="inp wi-f row">
           <Ic n="link" />
@@ -309,7 +309,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
           <div className="switches" style={{ marginTop: 14 }}>
             <div onClick={() => setShare(!share)}>
               <Ic n="users" />
-              <span>공유 (같이 가는 사람도 봐요)</span>
+              <span>전체공유</span>
               <i className={`sw${share ? " on" : ""}`} />
             </div>
           </div>
@@ -395,12 +395,12 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
         </div>
         {newGroup && <input className="inp" autoFocus value={group} onChange={(e) => setGroup(e.target.value)} placeholder="예) 돈키호테, 드럭스토어" style={{ marginTop: 8 }} />}
         <label className="flab">메모</label>
-        <input className="inp wi-f" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="가격, 개수, 누구 선물" />
+        <textarea className="inp wi-f wi-memo" rows={3} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="가격, 개수, 누구 선물" />
         {together && (!cur || cur.created_by === me) && (
           <div className="switches" style={{ marginTop: 14 }}>
             <div onClick={() => setShare(!share)}>
               <Ic n="users" />
-              <span>공유 (같이 가는 사람도 봐요)</span>
+              <span>전체공유</span>
               <i className={`sw${share ? " on" : ""}`} />
             </div>
           </div>

@@ -66,3 +66,6 @@ body{letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoo
 .pi .pshared + .pin{margin-left:8px}
 /* 위시리스트: 공유한 것 표시 */
 .wshared{font-style:normal;font-weight:800;color:var(--sub)}
+/* 위시리스트 메모: 여러 줄 */
+textarea.wi-memo{resize:none;min-height:84px;line-height:1.5;font:inherit;width:100%;display:block}
+#wish .boxc.shop small,#wish .wc>span{white-space:pre-line}
