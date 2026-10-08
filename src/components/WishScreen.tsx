@@ -203,7 +203,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
               {groups.map((g) => (
                 <div key={g || "_"} style={{ display: "contents" }}>
                   <div className="stt" style={{ marginTop: 14 }}>
-                    {g || "어디서든"}
+                    {g || "미지정"}
                   </div>
                   <div className="boxc shop">
                     {shops
@@ -379,7 +379,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
             </span>
           ))}
         </div>
-        <label className="flab">어디서</label>
+        <label className="flab">구매장소</label>
         <div className="chips flush si-g" style={{ marginTop: 0, flexWrap: "wrap" }}>
           {groups.filter(Boolean).map((g) => (
             <span key={g} className={`chip${!newGroup && group === g ? " on" : ""}`} onClick={() => (setGroup(g), setNewGroup(false))}>
@@ -387,7 +387,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
             </span>
           ))}
           <span className={`chip${!newGroup && !group ? " on" : ""}`} onClick={() => (setGroup(""), setNewGroup(false))}>
-            어디서든
+            미지정
           </span>
           <span className={`chip${newGroup ? " on" : ""}`} onClick={() => (setNewGroup(true), setGroup(""))}>
             ＋ 새 가게
