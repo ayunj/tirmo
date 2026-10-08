@@ -10,6 +10,7 @@ import { uploadPhoto } from "@/lib/photo";
 import { toast } from "@/lib/ui";
 import Go from "@/components/Go";
 import SaveBar from "@/components/ui/SaveBar";
+import { normDur } from "@/lib/move";
 import Ic, { type IcName } from "@/components/Ic";
 import Sheet from "@/components/ui/Sheet";
 import type { EventRow } from "@/lib/types";
@@ -94,7 +95,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
         time_text: time.trim() ? normTime(time) : null,
         sort,
         move_mode: move || null,
-        move_note: move ? [moveDur.trim(), moveMemo.trim()].filter(Boolean).join(" · ") || null : null,
+        move_note: move ? [normDur(moveDur), moveMemo.trim()].filter(Boolean).join(" · ") || null : null,
         memo: memo.trim() || null,
         address: address.trim() || null,
         link: link.trim() || null,

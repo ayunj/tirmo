@@ -7,7 +7,7 @@ import { normTime } from "@/lib/format";
 import { evCat, MOVE_LABEL } from "@/lib/cats";
 import { sym } from "@/lib/money";
 import { toast } from "@/lib/ui";
-import { splitMove } from "@/lib/move";
+import { splitMove, normDur } from "@/lib/move";
 import Go from "@/components/Go";
 import SaveBar from "@/components/ui/SaveBar";
 import Ic, { type IcName } from "@/components/Ic";
@@ -45,7 +45,7 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
 
   async function save() {
     setBusy(true);
-    const note = [dur.trim(), amt ? `${s}${amt.toLocaleString()}` : "", memo.trim()].filter(Boolean).join(" · ");
+    const note = [normDur(dur), amt ? `${s}${amt.toLocaleString()}` : "", memo.trim()].filter(Boolean).join(" · ");
     const supabase = createClient();
     const { error } = await supabase.from("events").update({ move_mode: mode || null, move_note: note || null }).eq("id", ev.id);
     if (error) {
