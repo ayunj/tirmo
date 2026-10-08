@@ -79,11 +79,11 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   }
 
   async function remove() {
-    if (!(await askDel("일정에서 뺄까요?", "기록과 지출은 남아 있어요", "빼기"))) return;
+    if (!(await askDel("이 일정을 삭제할까요?", "기록과 지출은 남아요", "삭제"))) return;
     const { error } = await createClient().from("events").delete().eq("id", e.id);
     if (error) return toast("지우지 못했어요");
     if (e.photo) removePhotos([e.photo]);
-    toast("일정에서 뺐어요");
+    toast("일정을 삭제했어요");
     router.replace(`/trips/${tid}/plan?day=${e.day ?? "none"}`);
     router.refresh();
   }
@@ -204,7 +204,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
             </div>
             <div className="mp-foot">
               <span className="mp-del" id="plDel" onClick={remove}>
-                <Ic n="trash" /> 일정에서 빼기
+                <Ic n="trash" /> 일정 삭제
               </span>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
           <div className="mp2">
             <div className="mp-r first">
               <span className="mp-l">주소</span>
-              <input className="mp-t" defaultValue={e.address ?? ""} placeholder="적어두고 싶으면" onChange={typeSave("address")} style={{ border: 0, background: "none" }} />
+              <input className="mp-t" defaultValue={e.address ?? ""} placeholder="주소 (선택)" onChange={typeSave("address")} style={{ border: 0, background: "none" }} />
             </div>
             <div className="mp-r">
               <span className="mp-l">링크</span>
@@ -276,10 +276,10 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
 
           <div className="btns2">
             <Go onClick={guard} href={`/trips/${tid}/diary/write?event=${e.id}${e.day ? `&day=${e.day}` : ""}`}>
-              <Ic n="square-pen" /> 기록 쓰기
+              <Ic n="square-pen" /> 기록 추가
             </Go>
             <Go onClick={guard} href={`/trips/${tid}/money/new?title=${encodeURIComponent(e.title)}${e.day ? `&day=${e.day}` : ""}`}>
-              <Ic n="receipt" /> 지출 쓰기
+              <Ic n="receipt" /> 지출 추가
             </Go>
           </div>
         </div>

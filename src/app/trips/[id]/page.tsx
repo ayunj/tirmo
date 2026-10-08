@@ -169,7 +169,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
                 <Ic n="wallet" />
               </div>
               <b>{main.length ? money(left, sym(trip.currency)) : `${expenses.length}건`}</b>
-              <span>{main.length ? "남은 예산" : "쓴 돈"}</span>
+              <span>{main.length ? "잔여 예산" : "총 지출"}</span>
             </Go>
             <Go href={`/trips/${id}/diary`}>
               <div className="tl-ic violet">

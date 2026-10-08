@@ -151,10 +151,10 @@ export default function TripForm({ trip, members = [], recentCountries = [], rec
   }
 
   async function remove() {
-    if (!trip || !(await askDel("이 여행을 지울까요?", "일정, 예약, 경비, 기록이 모두 지워지고 되돌릴 수 없어요"))) return;
+    if (!trip || !(await askDel("이 여행을 삭제할까요?", "일정, 예약, 경비, 기록이 모두 지워지고 되돌릴 수 없어요"))) return;
     const { error } = await createClient().from("trips").delete().eq("id", trip.id);
     if (error) return toast("방장만 지울 수 있어요");
-    toast("여행을 지웠어요");
+    toast("여행을 삭제했어요");
     router.replace("/");
     router.refresh();
   }
@@ -216,7 +216,7 @@ export default function TripForm({ trip, members = [], recentCountries = [], rec
               여행 이름 <span className="sub">커버 가운데에 크게 들어가요</span>
             </label>
             <input className="inp" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예) 세자매 후쿠오카 여행" maxLength={30} />
-            <label>어디로 가요?</label>
+            <label>여행지</label>
             <div className="inp row" onClick={() => setSheet("place")} style={{ cursor: "pointer" }}>
               <span className="dest">
                 {domestic ? (
@@ -292,7 +292,7 @@ export default function TripForm({ trip, members = [], recentCountries = [], rec
         }}
       />
 
-      <Sheet open={sheet === "place"} onClose={() => setSheet("")} title="어디로 가요?" id="placePick">
+      <Sheet open={sheet === "place"} onClose={() => setSheet("")} title="여행지 선택" id="placePick">
         <div className="segm abseg" id="abSeg" style={{ marginTop: 12 }}>
           <span className={ab === "out" ? "on" : ""} onClick={() => setAb("out")}>
             <Ic n="plane" /> 해외여행

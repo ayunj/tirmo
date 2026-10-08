@@ -36,7 +36,7 @@ export function Captures({ b, label = "모바일 탑승권 캡처 넣기" }: { b
     router.refresh();
   }
   async function del(i: number) {
-    if (!(await askDel("이 캡처를 뺄까요?", undefined, "빼기"))) return;
+    if (!(await askDel("이 캡처를 삭제할까요?", undefined, "삭제"))) return;
     const out = list.filter((_, j) => j !== i);
     await createClient().from("bookings").update({ photos: out }).eq("id", b.id);
     removePhotos([list[i]]);
@@ -139,11 +139,11 @@ export function DelBooking({ b }: { b: Booking }) {
     <div
       className="dellink"
       onClick={async () => {
-        if (!(await askDel("이 예약을 지울까요?", "일정에 들어간 항목은 남고 연결만 풀려요"))) return;
+        if (!(await askDel("이 예약을 삭제할까요?", "일정에 들어간 항목은 남고 연결만 풀려요"))) return;
         const { error } = await createClient().from("bookings").delete().eq("id", b.id);
         if (error) return toast("지우지 못했어요");
         removePhotos(b.photos || []);
-        toast("예약을 지웠어요");
+        toast("예약을 삭제했어요");
         router.replace(`/trips/${b.trip_id}/bookings`);
         router.refresh();
       }}

@@ -28,10 +28,10 @@ export default async function MorePage({ params }: { params: Promise<{ id: strin
   const tiles: [string, IcName, string, string, string][] = [
     [`${b}/bookings`, "ticket", "blue", "예약", kinds.length ? kinds.map(([k, n]) => `${k} ${n}`).join(" · ") : "항공 · 숙소 · 식당"],
     [`${b}/money`, "wallet", "amber", "경비", "예산 · 내역 · 정산"],
-    [`${b}/diary`, "book-open", "violet", "여행 기록", nEn ? `기록 ${nEn} · 사진 ${nPh}` : "사진 + 일기"],
+    [`${b}/diary`, "book-open", "violet", "여행 기록", nEn ? `기록 ${nEn} · 사진 ${nPh}` : "사진 · 메모"],
     [`${b}/pack`, "luggage", "green", "준비물", packs.length ? `${packs.filter((p) => p.done).length} / ${packs.length}` : "체크리스트"],
     [`${b}/wish`, "heart", "acc", "위시리스트", wPlace + wShop ? `가고싶은곳 ${wPlace} · 쇼핑 ${wShop}` : "가고싶은곳 · 쇼핑"],
-    ["", "file-text", "ink", "PDF 여행책", "곧 열려요"],
+    ["", "file-text", "ink", "PDF 여행책", "준비 중"],
   ];
   return (
     <section className="screen on" id="more">

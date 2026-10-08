@@ -12,7 +12,7 @@ import Sheet from "@/components/ui/Sheet";
 import DatePick from "@/components/ui/DatePick";
 import type { Pocket } from "@/lib/types";
 
-const HOW = ["추가 환전", "ATM 인출", "카드 충전", "멤버가 넣음", "남은 돈 옮기기", "기타"];
+const HOW = ["추가 환전", "ATM 인출", "카드 충전", "멤버 입금", "잔액 이동", "기타"];
 
 /** 돈 채우기 버튼 + 창 (목업 topUp) */
 export function TopUpButton({ p }: { p: Pocket }) {
@@ -36,7 +36,7 @@ export function TopUpButton({ p }: { p: Pocket }) {
     if (error) return toast("저장하지 못했어요");
     setOpen(false);
     setAmount("");
-    toast(`${s}${amt.toLocaleString()} 채웠어요`);
+    toast(`${s}${amt.toLocaleString()} 추가했어요`);
     router.refresh();
   }
 
@@ -44,14 +44,14 @@ export function TopUpButton({ p }: { p: Pocket }) {
   return (
     <>
       <div onClick={() => setOpen(true)}>
-        <Ic n="plus" /> 돈 채우기
+        <Ic n="plus" /> 예산 추가
       </div>
-      <Sheet open={open} onClose={() => setOpen(false)} title={`돈 채우기 · ${p.name}`} id="topUp">
+      <Sheet open={open} onClose={() => setOpen(false)} title={`예산 추가 · ${p.name}`} id="topUp">
         <div className="amt" style={{ display: "flex", justifyContent: "center", alignItems: "baseline" }}>
           <b>{s}</b>
           <FitInput autoFocus inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" style={{ ...field, flex: "none", fontSize: 44, fontWeight: 700, letterSpacing: "-1.5px", marginTop: 10 }} />
         </div>
-        <label className="flab">어떻게 채웠어요?</label>
+        <label className="flab">추가 방법</label>
         <div className="rough">
           {HOW.map((h) => (
             <span key={h} className={how === h ? "on" : ""} onClick={() => setHow(h)} style={{ cursor: "pointer" }}>
@@ -85,7 +85,7 @@ export function TopUpButton({ p }: { p: Pocket }) {
           </div>
         </div>
         <div className="bigbtn" onClick={save}>
-          채우기
+          추가
         </div>
       </Sheet>
       <DatePick open={dp} onClose={() => setDp(false)} mode="single" a={day} onDone={(a) => a && setDay(a)} />
@@ -100,7 +100,7 @@ export function DelTopUp({ id }: { id: string }) {
       className="ib"
       style={{ width: 28, height: 28, fontSize: 15, color: "var(--sub)" }}
       onClick={async () => {
-        if (!(await askDel("채운 기록을 지울까요?", undefined, "지우기"))) return;
+        if (!(await askDel("이 예산 내역을 삭제할까요?", undefined, "삭제"))) return;
         await createClient().from("topups").delete().eq("id", id);
         router.refresh();
       }}

@@ -114,11 +114,11 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
   }
 
   async function remove() {
-    if (!expense || !(await askDel("이 지출을 지울까요?", "예산 잔액과 정산에서도 빠져요"))) return;
+    if (!expense || !(await askDel("이 지출을 삭제할까요?", "예산 잔액과 정산에서도 빠져요"))) return;
     const { error } = await createClient().from("expenses").delete().eq("id", expense.id);
     if (error) return toast("지우지 못했어요");
     removePhotos(expense.photos || []);
-    toast("지출을 지웠어요");
+    toast("지출을 삭제했어요");
     router.replace(`/trips/${trip.id}/money?tab=list`);
     router.refresh();
   }
@@ -133,7 +133,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
-          <h2>{edit ? "지출 수정" : "지출 쓰기"}</h2>
+          <h2>{edit ? "지출 수정" : "지출 추가"}</h2>
         </div>
         <div className="pad">
           <div className="amt">
@@ -166,7 +166,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
             </Go>
           )}
 
-          <label className="flab">누가 냈나요?</label>
+          <label className="flab">결제자</label>
           <div className="payer">
             {hasShared && (
               <span className={shared ? "on" : ""} onClick={() => pickPayer("shared")}>
@@ -188,7 +188,7 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
 
           {list.length > 0 && (
             <>
-              <label className="flab">어느 예산에서요?</label>
+              <label className="flab">결제 예산</label>
               <div className="pkpick">
                 {list.map((p) => {
                   const st = pkStyle(p);
@@ -268,9 +268,9 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
                 <span>나눠 내기</span>
                 <i className={`sw${splitOn ? " on" : ""}`} />
               </div>
-              <div className="sp-off">혼자 쓴 돈 · 정산 없음</div>
+              <div className="sp-off">개인 지출 · 정산 없음</div>
               <div className="sp-on">
-                <div className="sp-lab">누구랑 나눠요?</div>
+                <div className="sp-lab">정산 대상</div>
                 <div className="sp-mem">
                   {members.map((m) => (
                     <span key={m.id} className={spm.includes(m.id) ? "on" : ""} onClick={() => setSpm(spm.includes(m.id) ? spm.filter((x) => x !== m.id) : [...spm, m.id])}>

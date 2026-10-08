@@ -62,7 +62,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
       <div className="pad" style={{ paddingBottom: 24 }}>
         {main.length > 0 && (
           <div className="bsum">
-            <div className="sub w">{trip.currency === "KRW" ? "예산 남은 돈" : `${curName} 예산 남은 돈`}</div>
+            <div className="sub w">{trip.currency === "KRW" ? "잔여 예산" : `${curName} 잔여 예산`}</div>
             <div className="bs-n">
               {money(tot - used, sym(trip.currency))} {trip.currency !== "KRW" && <span>≈ {money(toKrw(tot - used, trip.currency, trip), "₩")}</span>}
             </div>
@@ -98,7 +98,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
                 </div>
                 <div className="pk-n">
                   <b>{money(noBudget ? u.used : u.left, sym(p.currency))}</b>
-                  <span>{noBudget ? "사용" : "남음"}</span>
+                  <span>{noBudget ? "사용 금액" : "잔여"}</span>
                 </div>
               </div>
               {!noBudget && (
@@ -108,7 +108,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
               )}
               <div className="pk-f" style={noBudget ? { marginTop: 8 } : undefined}>
                 {noBudget ? (
-                  <span>금액 없음</span>
+                  <span>예산 없음</span>
                 ) : p.shared && members.length > 1 ? (
                   <>
                     <span className="names xs">
@@ -146,7 +146,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
                 </span>
                 <div className="mid">
                   <b>미지정</b>
-                  <span className="cur k">예산 없이 쓴 돈</span>
+                  <span className="cur k">예산 미지정 지출</span>
                 </div>
                 <div className="pk-n">
                   <b>{money(sum, "₩")}</b>
@@ -262,7 +262,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
           {mine && mu ? (
             <Go href={`${base}/pocket/${mine.id}`}>
               <span className="sub row">
-                남은 돈{" "}
+                잔여 경비{" "}
                 <em style={{ color: pkStyle(mine).color, fontStyle: "normal", fontWeight: 700 }}>
                   {mine.name} <Ic n="chevron-right" />
                 </em>
@@ -274,7 +274,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
             </Go>
           ) : (
             <Go href={`${base}/pocket/new`}>
-              <span className="sub">남은 돈</span>
+              <span className="sub">잔여 경비</span>
               <b style={{ fontSize: 14, color: "var(--sub)" }}>예산 만들기</b>
             </Go>
           )}
@@ -296,7 +296,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
           })}
           {filtered.length === 0 && (
             <div className="sub" style={{ textAlign: "center", padding: "40px 0 10px" }}>
-              {keys.includes(d) || d === "all" ? "아직 쓴 돈이 없어요" : ""}
+              {keys.includes(d) || d === "all" ? "지출 내역이 없어요" : ""}
             </div>
           )}
           <Go className="addline" href={`${base}/new${d !== "all" && d !== "pre" ? `?day=${d}` : ""}`}>
@@ -349,7 +349,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
                 <span>{money(c.v, "₩")}</span>
               </div>
             ))}
-            {byCat.length === 0 && <div className="sub">아직 쓴 돈이 없어요</div>}
+            {byCat.length === 0 && <div className="sub">지출 내역이 없어요</div>}
           </div>
         </div>
         {byPocket.length > 0 && (

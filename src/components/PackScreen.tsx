@@ -67,18 +67,18 @@ export default function PackScreen({ tripId, head, items, members, me, dleft, pr
     setBusy(false);
     if (error) return toast("저장하지 못했어요");
     setSheet(null);
-    toast(it ? "고쳤어요" : `${category}에 넣었어요`);
+    toast(it ? "수정했어요" : `${category}에 추가했어요`);
     if (filt && filt !== category) setFilt(category);
     router.refresh();
   }
 
   async function remove() {
     const it = sheet?.it;
-    if (!it || !(await askDel("이 준비물을 뺄까요?", undefined, "빼기"))) return;
+    if (!it || !(await askDel("이 준비물을 삭제할까요?", undefined, "삭제"))) return;
     const { error } = await createClient().from("pack_items").delete().eq("id", it.id);
     if (error) return toast("지우지 못했어요");
     setSheet(null);
-    toast("뺐어요");
+    toast("삭제했어요");
     router.refresh();
   }
 
@@ -107,7 +107,7 @@ export default function PackScreen({ tripId, head, items, members, me, dleft, pr
               {pct}%
             </div>
             <div>
-              <b>{list.length ? `${done}개 챙겼어요` : "내 준비물을 적어 봐요"}</b>
+              <b>{list.length ? `${done}개 챙겼어요` : "준비물이 없어요"}</b>
               <div className="sub">{[list.length ? `${list.length - done}개 남음` : "", dleft].filter(Boolean).join(" · ")}</div>
             </div>
           </div>

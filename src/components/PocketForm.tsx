@@ -47,10 +47,10 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
   }
 
   async function remove() {
-    if (!pocket || !(await askDel(`${pocket.name} 예산을 지울까요?`, "이 예산으로 쓴 지출 기록은 남아요"))) return;
+    if (!pocket || !(await askDel(`${pocket.name} 예산을 삭제할까요?`, "이 예산의 지출 내역은 남아요"))) return;
     const { error } = await createClient().from("pockets").delete().eq("id", pocket.id);
     if (error) return toast("지우지 못했어요");
-    toast("예산을 지웠어요");
+    toast("예산을 삭제했어요");
     router.replace(`/trips/${trip.id}/money`);
     router.refresh();
   }
@@ -85,7 +85,7 @@ export default function PocketForm({ trip, me, members, pocket }: { trip: Pick<T
           <div className="form">
             {!shared && members.length > 1 && (
               <>
-                <label>누구 거예요?</label>
+                <label>사용자</label>
                 <div className="chips flush" style={{ marginTop: 0 }}>
                   {members.map((m) => (
                     <span key={m.id} className={`chip${owner === m.id ? " on" : ""}`} onClick={() => setOwner(m.id)}>

@@ -248,11 +248,11 @@ export default function BookingForm({ tripId, tripCurrency, memberIds, me, pocke
   }
 
   async function remove() {
-    if (!booking || !(await askDel("이 예약을 지울까요?", "일정에 들어간 항목은 남고 연결만 풀려요"))) return;
+    if (!booking || !(await askDel("이 예약을 삭제할까요?", "일정에 들어간 항목은 남고 연결만 풀려요"))) return;
     const { error } = await createClient().from("bookings").delete().eq("id", booking.id);
     if (error) return toast("지우지 못했어요");
     removePhotos(booking.photos || []);
-    toast("예약을 지웠어요");
+    toast("예약을 삭제했어요");
     router.replace(`/trips/${tripId}/bookings`);
     router.refresh();
   }

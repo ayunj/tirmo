@@ -14,7 +14,7 @@ export default async function SettlePage({ params }: { params: Promise<{ id: str
   const sharedSum = expenses.filter((e) => !e.payer_id).reduce((s, e) => s + toKrw(Number(e.amount), e.currency, trip), 0);
   const n = Math.max(1, members.length);
   const moves = st.moves.map((m) => ({ ...m, label: `${p(m.from).nickname} → ${p(m.to).nickname}` }));
-  const text = [`[${trip.title}] 정산`, `함께 쓴 돈 ${money(st.total, "₩")} · 1인 ${money(st.total / n, "₩")}`, ...moves.map((m) => `${m.label} ${money(m.amount, "₩")}`)].join("\n");
+  const text = [`[${trip.title}] 정산`, `공동 지출 ${money(st.total, "₩")} · 1인 ${money(st.total / n, "₩")}`, ...moves.map((m) => `${m.label} ${money(m.amount, "₩")}`)].join("\n");
   const Av = ({ id: uid }: { id: string }) => (
     <span className="av xs">
       <i style={{ background: p(uid).color }}>{p(uid).nickname.slice(0, 1)}</i>
@@ -34,14 +34,14 @@ export default async function SettlePage({ params }: { params: Promise<{ id: str
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="bsum" style={{ marginTop: 4 }}>
-            <div className="sub w">함께 쓴 돈 (나눠 내기 설정된 지출)</div>
+            <div className="sub w">공동 지출 (나눠 내기 설정된 지출)</div>
             <div className="bs-n">{money(st.total, "₩")}</div>
             <div className="row" style={{ fontSize: 12.5, opacity: 0.75, marginTop: 6 }}>
               <span>{members.length}명</span>
               <span>1인 {money(st.total / n, "₩")}</span>
             </div>
           </div>
-          <div className="stt">누가 얼마 냈나</div>
+          <div className="stt">결제자별 금액</div>
           <div className="boxc paid">
             {people.map((m) => (
               <div key={m.id}>
@@ -54,7 +54,7 @@ export default async function SettlePage({ params }: { params: Promise<{ id: str
               </div>
             ))}
           </div>
-          <div className="stt">이렇게 보내면 끝나요</div>
+          <div className="stt">송금할 금액</div>
           <div className="boxc sendl">
             {transfers.map((t) => (
               <div key={t.id}>
@@ -93,7 +93,7 @@ export default async function SettlePage({ params }: { params: Promise<{ id: str
           <SettleButtons tripId={id} text={text} moves={moves} />
           {sharedSum > 0 && (
             <div className="tip">
-              <Ic n="users" /> 공동경비 예산에서 쓴 돈은 이미 같이 낸 돈이라 정산에서 빠져요.
+              <Ic n="users" /> 공동경비 예산의 지출은 정산에서 제외돼요.
             </div>
           )}
         </div>

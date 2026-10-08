@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { loadMoney } from "@/lib/moneyload";
+import { days, parseDate, weekday } from "@/lib/format";
 import { expCat, money, pocketUse, sym, toKrw } from "@/lib/money";
 import Go from "@/components/Go";
 import Ic, { type IcName } from "@/components/Ic";
@@ -8,15 +9,20 @@ import { DelTopUp, TopUpButton } from "@/components/TopUp";
 
 const sd = (d: string | null) => (d ? `${+d.split("-")[1]}/${+d.split("-")[2]}` : "준비");
 
-export default async function PocketDetail({ params }: { params: Promise<{ id: string; pid: string }> }) {
+export default async function PocketDetail({ params, searchParams }: { params: Promise<{ id: string; pid: string }>; searchParams: Promise<{ d?: string }> }) {
   const { id, pid } = await params;
+  const { d = "all" } = await searchParams;
   const { trip, pockets, expenses, topups } = await loadMoney(id);
   const p = pockets.find((x) => x.id === pid);
   if (!p) notFound();
   const u = pocketUse(p, expenses, topups);
   const s = sym(p.currency);
   const tops = topups.filter((t) => t.pocket_id === p.id);
-  const spent = expenses.filter((e) => e.pocket_id === p.id).sort((a, b) => `${b.day ?? ""}${b.time_text ?? ""}`.localeCompare(`${a.day ?? ""}${a.time_text ?? ""}`));
+  const ds = days(trip.start_date, trip.end_date);
+  const here = `/trips/${id}/money/pocket/${pid}`;
+  const all = expenses.filter((e) => e.pocket_id === p.id).sort((a, b) => `${b.day ?? ""}${b.time_text ?? ""}`.localeCompare(`${a.day ?? ""}${a.time_text ?? ""}`));
+  const spent = d === "all" ? all : all.filter((e) => (d === "pre" ? !e.day || !ds.includes(e.day) : e.day === d));
+  const spentSum = spent.reduce((x, e) => x + Number(e.amount), 0);
 
   return (
     <section className="screen on" id="pocketDetail">
@@ -33,7 +39,7 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="bsum" style={{ marginTop: 4 }}>
-            <div className="sub w">{u.total > 0 ? "남은 돈" : "쓴 돈"}</div>
+            <div className="sub w">{u.total > 0 ? "잔여 경비" : "사용 금액"}</div>
             <div className="bs-n">
               {money(u.total > 0 ? u.left : u.used, s)} {p.currency !== "KRW" && <span>≈ {money(toKrw(u.total > 0 ? u.left : u.used, p.currency, trip), "₩")}</span>}
             </div>
@@ -43,8 +49,8 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
                   <i style={{ width: `${u.pct}%` }} />
                 </div>
                 <div className="row" style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
-                  <span>{money(u.used, s)} 사용</span>
-                  <span>채운 돈 {money(u.total, s)}</span>
+                  <span>사용 금액 {money(u.used, s)}</span>
+                  <span>총 예산 {money(u.total, s)}</span>
                 </div>
               </>
             )}
@@ -52,12 +58,12 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
           <div className="btns2">
             <TopUpButton p={p} />
             <Go href={`/trips/${id}/money?tab=list`}>
-              <Ic n="receipt" /> 쓴 내역
+              <Ic n="receipt" /> 지출 내역
             </Go>
           </div>
 
           <div className="stt row">
-            채운 내역{" "}
+            예산 내역{" "}
             <span className="sub" style={{ fontWeight: 600 }}>
               {tops.length + (Number(p.budget) > 0 ? 1 : 0)}번 · {money(u.total, s)}
             </span>
@@ -69,8 +75,8 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
                   <Ic n="arrow-down-to-line" />
                 </span>
                 <div className="mid">
-                  <b>처음 금액</b>
-                  <div className="s">예산 만들 때</div>
+                  <b>초기 예산</b>
+                  <div className="s">예산 생성 시</div>
                 </div>
                 <div className="ea">
                   <b className="plus">+ {money(Number(p.budget), s)}</b>
@@ -84,7 +90,7 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
                   <Ic n="arrow-down-to-line" />
                 </span>
                 <div className="mid">
-                  <b>{t.how || "채움"}</b>
+                  <b>{t.how || "예산 추가"}</b>
                   <div className="s">{[sd(t.day), t.memo, t.rate_text].filter(Boolean).join(" · ")}</div>
                 </div>
                 <div className="ea">
@@ -94,17 +100,34 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
                 <DelTopUp id={t.id} />
               </div>
             ))}
-            {Number(p.budget) <= 0 && tops.length === 0 && <div className="sub">아직 채운 돈이 없어요</div>}
+            {Number(p.budget) <= 0 && tops.length === 0 && <div className="sub">예산 내역이 없어요</div>}
           </div>
 
-          <div className="stt">
-            쓴 돈{" "}
-            <span className="sub" style={{ fontWeight: 500 }}>
-              최근
+          <div className="stt row">
+            최근 지출
+            <span className="sub" style={{ fontWeight: 600 }}>
+              {spent.length}건 · {money(spentSum, sym(p.currency))}
             </span>
           </div>
+          <div className="dsel" style={{ margin: "8px -16px 10px", padding: "0 16px" }}>
+            <Go className={d === "all" ? "on" : ""} href={here} replace keep>
+              <span>전체</span>
+              <b>A</b>
+            </Go>
+            <Go className={d === "pre" ? "on" : ""} href={`${here}?d=pre`} replace keep>
+              <span>준비</span>
+              <b>P</b>
+            </Go>
+            <i />
+            {ds.map((x) => (
+              <Go key={x} className={`${d === x ? "on" : ""}${weekday(x) === "일" ? " sun" : ""}`} href={`${here}?d=${x}`} replace keep>
+                <span>{weekday(x)}</span>
+                <b>{parseDate(x).getDate()}</b>
+              </Go>
+            ))}
+          </div>
           <div className="boxc tops">
-            {spent.slice(0, 20).map((e) => {
+            {spent.slice(0, d === "all" ? 20 : 200).map((e) => {
               const c = expCat(e.category);
               return (
                 <Go key={e.id} href={`/trips/${id}/money/${e.id}`}>
@@ -123,7 +146,7 @@ export default async function PocketDetail({ params }: { params: Promise<{ id: s
                 </Go>
               );
             })}
-            {spent.length === 0 && <div className="sub">아직 쓴 돈이 없어요</div>}
+            {spent.length === 0 && <div className="sub">지출 내역이 없어요</div>}
           </div>
         </div>
       </div>

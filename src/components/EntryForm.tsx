@@ -96,7 +96,7 @@ export default function EntryForm({ tripId, days, events, entry, defaultDay, def
           <Go as="span" className="ib" back>
             <Ic n="x" />
           </Go>
-          <h2>{edit ? "기록 수정" : "기록 쓰기"}</h2>
+          <h2>{edit ? "기록 수정" : "기록 추가"}</h2>
         </div>
         <div className="pad" style={{ paddingBottom: 28 }}>
           <div className="wmeta">
@@ -156,7 +156,7 @@ export default function EntryForm({ tripId, days, events, entry, defaultDay, def
             ))}
           </div>
           <input className="wtitle" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="제목" style={{ display: "block", width: "100%", border: 0, outline: 0, fontFamily: "inherit" }} />
-          <textarea className="wtext note" value={body} onChange={(e) => setBody(e.target.value)} placeholder="오늘 어땠어요?" style={{ display: "block", width: "100%", border: 0, outline: 0, fontFamily: "inherit", resize: "none" }} />
+          <textarea className="wtext note" value={body} onChange={(e) => setBody(e.target.value)} placeholder="내용" style={{ display: "block", width: "100%", border: 0, outline: 0, fontFamily: "inherit", resize: "none" }} />
           <div className="flab row" style={{ marginTop: 18 }}>
             <span>
               사진 <b className="wcnt">{photos.length}</b>
@@ -259,11 +259,11 @@ export function DelEntry({ e }: { e: Entry }) {
       className="dellink"
       id="evDel"
       onClick={async () => {
-        if (!(await askDel("이 기록을 지울까요?", "사진도 같이 지워지고 되돌릴 수 없어요"))) return;
+        if (!(await askDel("이 기록을 삭제할까요?", "사진도 같이 지워지고 되돌릴 수 없어요"))) return;
         const { error } = await createClient().from("entries").delete().eq("id", e.id);
         if (error) return toast("지우지 못했어요");
         removePhotos(e.photos || []);
-        toast("기록을 지웠어요");
+        toast("기록을 삭제했어요");
         router.replace(`/trips/${e.trip_id}/diary${e.day ? `?day=${e.day}` : ""}`);
         router.refresh();
       }}

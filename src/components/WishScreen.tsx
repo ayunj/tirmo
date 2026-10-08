@@ -14,7 +14,7 @@ import PlanPick, { type DayEv } from "@/components/ui/PlanPick";
 import type { Wish } from "@/lib/types";
 
 const wk = wishKind;
-const SEQ = ["todo", "buy", "no", "q"] as const;
+const SEQ = ["todo", "buy", "no"] as const;
 type St = (typeof SEQ)[number];
 const stOf = (s: string | null): St =>
   s === "done" ? "buy" : SEQ.includes(s as St) ? (s as St) : "todo";
@@ -24,8 +24,6 @@ const StIc = ({ s }: { s: St }) => (
       <Ic n="check" />
     ) : s === "no" ? (
       <Ic n="x" />
-    ) : s === "q" ? (
-      "?"
     ) : null}
   </i>
 );
@@ -147,8 +145,8 @@ export default function WishScreen({
       cur
         ? "저장했어요"
         : isPlace
-          ? "가고싶은곳에 넣었어요"
-          : "쇼핑리스트에 넣었어요",
+          ? "가고싶은곳에 추가했어요"
+          : "쇼핑 리스트에 추가했어요",
     );
     router.refresh();
   }
@@ -156,7 +154,7 @@ export default function WishScreen({
   async function remove() {
     if (
       !cur ||
-      !(await askDel(`${cur.name}을(를) 지울까요?`, undefined, "지우기"))
+      !(await askDel(`${cur.name}을(를) 삭제할까요?`, undefined, "삭제"))
     )
       return;
     const { error } = await createClient()
@@ -166,12 +164,12 @@ export default function WishScreen({
     if (error) return toast("지우지 못했어요");
     removePhotos(cur.photos || []);
     setSheet(null);
-    toast("지웠어요");
+    toast("삭제했어요");
     router.refresh();
   }
 
   async function cycle(w: Wish) {
-    const next = SEQ[(SEQ.indexOf(stOf(w.status)) + 1) % 4];
+    const next = SEQ[(SEQ.indexOf(stOf(w.status)) + 1) % SEQ.length];
     await createClient().from("wishes").update({ status: next }).eq("id", w.id);
     router.refresh();
   }
@@ -283,7 +281,7 @@ export default function WishScreen({
                   className="sub"
                   style={{ textAlign: "center", padding: "40px 0 10px" }}
                 >
-                  가고 싶은 곳을 모아 봐요
+                  가고싶은곳이 없어요
                 </div>
               )}
               <div
@@ -298,18 +296,14 @@ export default function WishScreen({
             <>
               <div className="stlegend">
                 <span>
-                  <StIc s="todo" />살 것
+                  <StIc s="todo" />찜
                 </span>
                 <span>
                   <StIc s="buy" />
-                  샀음
+                  구매완료
                 </span>
                 <span>
-                  <StIc s="no" />안 삼
-                </span>
-                <span>
-                  <StIc s="q" />
-                  고민
+                  <StIc s="no" />제외
                 </span>
               </div>
               {groups.map((g) => {
@@ -332,8 +326,8 @@ export default function WishScreen({
                         .map((w, i) => [w, i] as const)
                         .sort(
                           ([a, ai], [b, bi]) =>
-                            Number(stOf(a.status) === "buy") -
-                              Number(stOf(b.status) === "buy") || ai - bi,
+                            SEQ.indexOf(stOf(a.status)) -
+                              SEQ.indexOf(stOf(b.status)) || ai - bi,
                         )
                         .map(([w]) => {
                           const s = stOf(w.status);
@@ -390,7 +384,7 @@ export default function WishScreen({
                   className="sub"
                   style={{ textAlign: "center", padding: "40px 0 10px" }}
                 >
-                  살 것을 적어 봐요
+                  쇼핑 항목이 없어요
                 </div>
               )}
               <div
@@ -399,7 +393,7 @@ export default function WishScreen({
                 style={{ marginTop: 12 }}
                 onClick={() => openShop(null)}
               >
-                <Ic n="plus" /> 살 것 추가
+                <Ic n="plus" /> 쇼핑 항목 추가
               </div>
             </>
           )}
@@ -555,7 +549,7 @@ export default function WishScreen({
       <Sheet
         open={sheet === "shop"}
         onClose={() => setSheet(null)}
-        title={cur ? "살 것" : "살 것 추가"}
+        title={cur ? "쇼핑 항목" : "쇼핑 항목 추가"}
         id="shopItem"
       >
         <div
@@ -590,16 +584,15 @@ export default function WishScreen({
           autoFocus={!cur}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="살 것"
+          placeholder="상품 이름"
         />
         <label className="flab">상태</label>
         <div className="si-st">
           {(
             [
-              ["todo", "살 것"],
-              ["buy", "샀음"],
-              ["no", "안 삼"],
-              ["q", "고민"],
+              ["todo", "찜"],
+              ["buy", "구매완료"],
+              ["no", "제외"],
             ] as [St, string][]
           ).map(([k, l]) => (
             <span
@@ -617,6 +610,12 @@ export default function WishScreen({
           className="chips flush si-g"
           style={{ marginTop: 0, flexWrap: "wrap" }}
         >
+          <span
+            className={`chip${!newGroup && !group ? " on" : ""}`}
+            onClick={() => (setGroup(""), setNewGroup(false))}
+          >
+            미지정
+          </span>
           {groups.filter(Boolean).map((g) => (
             <span
               key={g}
@@ -627,16 +626,10 @@ export default function WishScreen({
             </span>
           ))}
           <span
-            className={`chip${!newGroup && !group ? " on" : ""}`}
-            onClick={() => (setGroup(""), setNewGroup(false))}
-          >
-            미지정
-          </span>
-          <span
             className={`chip${newGroup ? " on" : ""}`}
             onClick={() => (setNewGroup(true), setGroup(""))}
           >
-            ＋ 새 가게
+            ＋ 새 구매장소
           </span>
         </div>
         {newGroup && (

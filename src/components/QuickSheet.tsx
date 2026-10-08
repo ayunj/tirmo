@@ -15,7 +15,7 @@ export default function QuickSheet({ id, open, onClose }: { id: string; open: bo
     [`${b}/wish`, "heart", "acc", "가고싶은곳"],
   ];
   return (
-    <Sheet open={open} onClose={onClose} title="무엇을 추가할까요?" tall={false} id="quick">
+    <Sheet open={open} onClose={onClose} title="추가하기" tall={false} id="quick">
       <div className="qgrid">
         {items.map(([href, n, c, l]) => (
           <Go key={href} href={href} onClick={onClose}>

@@ -102,7 +102,7 @@ export default function MoveForm({ ev, prev, currency, pockets, me }: Props) {
               </div>
             </div>
           </div>
-          <label className="flab">어떻게 가요?</label>
+          <label className="flab">이동 수단</label>
           <div className="modelist">
             {MODES.map(([k, n, l]) => (
               <div key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)} style={{ cursor: "pointer" }}>

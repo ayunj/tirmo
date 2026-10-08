@@ -139,7 +139,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
                 className="nminp"
                 rows={2}
                 value={title}
-                placeholder="어디 가요? 뭐 해요?"
+                placeholder="일정 이름"
                 onFocus={() => setOpen(true)}
                 onBlur={() => setTimeout(() => setOpen(false), 150)}
                 onChange={(e) => {
