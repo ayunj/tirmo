@@ -15,7 +15,7 @@ import Ic, { type IcName } from "@/components/Ic";
 import Sheet from "@/components/ui/Sheet";
 import type { EventRow } from "@/lib/types";
 
-export type LinkOpt = { id: string; wk?: "place" | "shop"; title: string; sub?: string; ic?: IcName; c?: string; address?: string | null; link?: string | null; cat?: string };
+export type LinkOpt = { id: string; wk?: "place" | "shop"; st?: string | null; title: string; sub?: string; ic?: IcName; c?: string; address?: string | null; link?: string | null; cat?: string };
 type DayEv = Pick<EventRow, "id" | "day" | "time_text" | "sort" | "title">;
 
 type Props = {

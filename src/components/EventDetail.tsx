@@ -1,6 +1,7 @@
 "use client";
 
 import { evLinks } from "@/lib/evlinks";
+const SHOP_SEQ = ["todo", "buy", "no"] as const;
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -34,6 +35,21 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   const bks = L.bks.map((id) => bookings.find((b) => b.id === id)).filter((x): x is LinkOpt & { status?: string } => !!x);
   const wis = L.wis.map((id) => wishes.find((w) => w.id === id)).filter((x): x is LinkOpt => !!x);
   const places = wis.filter((w) => w.wk !== "shop");
+  // 쇼핑 상태는 여기서 바로 바꿔요 (일정 저장과 따로)
+  const [stOver, setStOver] = useState<Record<string, string>>({});
+  const shopSt = (w: LinkOpt) => {
+    const v = stOver[w.id] ?? w.st ?? "todo";
+    return (v === "done" ? "buy" : SHOP_SEQ.includes(v as (typeof SHOP_SEQ)[number]) ? v : "todo") as (typeof SHOP_SEQ)[number];
+  };
+  async function cycleShop(w: LinkOpt) {
+    const next = SHOP_SEQ[(SHOP_SEQ.indexOf(shopSt(w)) + 1) % SHOP_SEQ.length];
+    setStOver((o) => ({ ...o, [w.id]: next }));
+    const { error } = await createClient().from("wishes").update({ status: next }).eq("id", w.id);
+    if (error) {
+      setStOver((o) => ({ ...o, [w.id]: shopSt(w) }));
+      toast("저장하지 못했어요");
+    }
+  }
   const shops = wis.filter((w) => w.wk === "shop");
 
   // 고친 내용은 모아 두었다가 '저장'을 눌러야 저장돼요
@@ -178,21 +194,30 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
             </Go>
           ))}
           {shops.length > 0 && (
-            <Go onClick={guard} className="plshop" href={`/trips/${tid}/wish?tab=shop`}>
-              <div className="ps-h">
+            <div className="plshop">
+              <Go onClick={guard} className="ps-h" href={`/trips/${tid}/wish?tab=shop`}>
                 <Ic n="shopping-bag" />
-                <b>쇼핑 {shops.length}개</b>
+                <b>쇼핑 리스트</b>
+                <span className="sub">
+                  {shops.filter((w) => shopSt(w) === "buy").length} / {shops.filter((w) => shopSt(w) !== "no").length}
+                </span>
                 <em>
-                  쇼핑 리스트 <Ic n="chevron-right" />
+                  전체 보기 <Ic n="chevron-right" />
                 </em>
-              </div>
-              {shops.map((w) => (
-                <div key={w.id} className="ps-i">
-                  <span>{w.title}</span>
-                  <small>{w.sub}</small>
-                </div>
-              ))}
-            </Go>
+              </Go>
+              {[...shops]
+                .sort((a, b) => SHOP_SEQ.indexOf(shopSt(a)) - SHOP_SEQ.indexOf(shopSt(b)))
+                .map((w) => {
+                  const st = shopSt(w);
+                  return (
+                    <div key={w.id} className={`ps-i ${st}`} onClick={() => cycleShop(w)}>
+                      <i className={`st ${st}`}>{st === "buy" ? <Ic n="check" /> : st === "no" ? <Ic n="x" /> : null}</i>
+                      <span>{w.title}</span>
+                      <small>{w.sub}</small>
+                    </div>
+                  );
+                })}
+            </div>
           )}
 
           <div className="myplan">

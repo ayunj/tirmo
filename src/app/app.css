@@ -74,10 +74,14 @@ textarea.wi-memo{resize:none;min-height:84px;line-height:1.5;font:inherit;width:
 .pdays::-webkit-scrollbar{display:none}
 .pdays span{flex:none;font-size:12.5px;font-weight:700;color:var(--sub);padding:5px 10px;border-radius:999px}
 .pdays span.on{background:var(--ink);color:var(--card)}
-/* 일정 상세: 연결한 쇼핑 목록 */
-.plshop{display:block;margin-top:10px;background:var(--card);border-radius:16px;padding:12px 14px}
-.plshop .ps-h{display:flex;align-items:center;gap:8px;color:var(--green)}
+/* 일정 상세: 연결한 쇼핑 리스트 (눌러서 찜 → 구매완료 → 제외) */
+.plshop{margin-top:10px;background:var(--card);border-radius:16px;padding:12px 14px 6px}
+.plshop .ps-h{display:flex;align-items:center;gap:8px;color:var(--green);padding-bottom:4px}
 .plshop .ps-h b{color:var(--ink);font-size:14px}
+.plshop .ps-h .sub{font-size:12px;font-weight:700}
 .plshop .ps-h em{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;color:var(--sub);display:flex;align-items:center}
-.plshop .ps-i{display:flex;align-items:baseline;gap:8px;padding:8px 0 0 26px;font-size:14px}
+.plshop .ps-i{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;cursor:pointer}
+.plshop .ps-i .st{width:22px;height:22px;border-radius:7px;font-size:12px}
 .plshop .ps-i small{margin-left:auto;font-size:12px;color:var(--sub);white-space:nowrap}
+.plshop .ps-i.buy span,.plshop .ps-i.no span{color:var(--sub)}
+.plshop .ps-i.no span{text-decoration:line-through}

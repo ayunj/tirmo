@@ -30,7 +30,7 @@ export async function linkOptions(supabase: SupabaseClient, tripId: string, me?:
     .filter((x) => !me || x.created_by === me || x.shared !== false)
     .map((x) =>
       x.kind === "shop"
-        ? { id: x.id as string, wk: "shop" as const, title: x.name as string, cat: "쇼핑", address: null, link: null, sub: [x.shop_group || "미지정", x.memo?.split("\n")[0]].filter(Boolean).join(" · "), ic: "shopping-bag" as IcName, c: "green" }
+        ? { id: x.id as string, wk: "shop" as const, st: (x.status as string | null) ?? null, title: x.name as string, cat: "쇼핑", address: null, link: null, sub: [x.shop_group || "미지정", x.memo?.split("\n")[0]].filter(Boolean).join(" · "), ic: "shopping-bag" as IcName, c: "green" }
         : { id: x.id as string, wk: "place" as const, title: x.name as string, cat: wishKind(x.category as string)?.[2] ?? "기타", address: x.address as string | null, link: x.link as string | null, sub: [x.category, x.address].filter(Boolean).join(" · ") },
     );
   // 자주 가는 곳: 숙소 + 이 여행에서 두 번 이상 쓴 이름
