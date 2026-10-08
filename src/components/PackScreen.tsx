@@ -156,7 +156,7 @@ export default function PackScreen({ tripId, head, items, members, me, dleft, pr
                           <Ic n="link" /> 예약
                         </Go>
                       )}
-                      {!it.assignee && members.length > 1 && <span className="pshared">다 같이</span>}
+                      {!it.assignee && members.length > 1 && <span className="pshared">전체</span>}
                       {it.pinned && (
                         <span className="pin">
                           <Ic n="pin" />
@@ -208,7 +208,7 @@ export default function PackScreen({ tripId, head, items, members, me, dleft, pr
           {members.length > 1 && (
             <div id="piShared" onClick={() => setShared(!shared)}>
               <Ic n="users" />
-              <span>다 같이 챙길 것 (모두에게 보여요)</span>
+              <span>전체 준비물 (모두에게 보여요)</span>
               <i className={`sw${shared ? " on" : ""}`} />
             </div>
           )}
