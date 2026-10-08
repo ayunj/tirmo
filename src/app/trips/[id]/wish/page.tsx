@@ -1,3 +1,4 @@
+import { evLinks } from "@/lib/evlinks";
 import { loadTrip } from "@/lib/trip";
 import { days } from "@/lib/format";
 import LiveRefresh from "@/components/LiveRefresh";
@@ -10,11 +11,11 @@ export default async function WishPage({ params, searchParams }: { params: Promi
   const { supabase, trip, user, members } = await loadTrip(id);
   const [w, ev] = await Promise.all([
     supabase.from("wishes").select("*").eq("trip_id", id).order("created_at"),
-    supabase.from("events").select("id, day, time_text, sort, title, wish_id").eq("trip_id", id).order("sort"),
+    supabase.from("events").select("*").eq("trip_id", id).order("sort"),
   ]);
   const events = ev.data ?? [];
   const planned: Record<string, string | null> = {};
-  for (const e of events) if (e.wish_id && !(e.wish_id in planned)) planned[e.wish_id] = e.day;
+  for (const e of events) for (const w of evLinks(e).wis) if (!(w in planned)) planned[w] = e.day;
   return (
     <>
       <LiveRefresh tripId={id} table="wishes" />

@@ -45,6 +45,8 @@ export type EventRow = {
   move_note: string | null;
   booking_id: string | null;
   wish_id: string | null;
+  booking_ids?: string[];
+  wish_ids?: string[];
 };
 
 export type BookingKind = "flight" | "hotel" | "car" | "restaurant" | "tour" | "etc";

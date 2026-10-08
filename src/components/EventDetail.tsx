@@ -1,5 +1,6 @@
 "use client";
 
+import { evLinks } from "@/lib/evlinks";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -29,14 +30,17 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   const [tm, setTm] = useState(normTime(ev.time_text));
   const c = evCat(e.category);
   const tid = e.trip_id;
-  const bk = bookings.find((b) => b.id === e.booking_id);
-  const wi = wishes.find((w) => w.id === e.wish_id);
+  const L = evLinks(e);
+  const bks = L.bks.map((id) => bookings.find((b) => b.id === id)).filter((x): x is LinkOpt & { status?: string } => !!x);
+  const wis = L.wis.map((id) => wishes.find((w) => w.id === id)).filter((x): x is LinkOpt => !!x);
+  const places = wis.filter((w) => w.wk !== "shop");
+  const shops = wis.filter((w) => w.wk === "shop");
 
   // 고친 내용은 모아 두었다가 '저장'을 눌러야 저장돼요
   const [saved, setSaved] = useState<EventRow>(ev);
   const [busy, setBusy] = useState(false);
-  const KEYS = ["title", "category", "day", "time_text", "memo", "address", "link", "booking_id", "wish_id", "photo"] as const;
-  const norm = (k: (typeof KEYS)[number], v: unknown) => (typeof v === "string" ? (k === "time_text" ? normTime(v) : v.trim()) || null : v ?? null);
+  const KEYS = ["title", "category", "day", "time_text", "memo", "address", "link", "booking_id", "wish_id", "booking_ids", "wish_ids", "photo"] as const;
+  const norm = (k: (typeof KEYS)[number], v: unknown) => (Array.isArray(v) ? JSON.stringify(v) : typeof v === "string" ? (k === "time_text" ? normTime(v) : v.trim()) || null : v ?? null);
   const diff = Object.fromEntries(KEYS.filter((k) => norm(k, e[k]) !== norm(k, saved[k])).map((k) => [k, e[k] ?? null])) as Partial<EventRow>;
   const dirty = Object.keys(diff).length > 0;
   function patch(p: Partial<EventRow>) {
@@ -145,8 +149,8 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
             </span>
           </div>
 
-          {bk && (
-            <Go onClick={guard} className={`plbk ${bk.status && bk.status !== "예약 완료" ? "wait" : "ok"}`} id="plBk" href={`/trips/${tid}/bookings/${bk.id}`}>
+          {bks.map((bk) => (
+            <Go key={bk.id} onClick={guard} className={`plbk ${bk.status && bk.status !== "예약 완료" ? "wait" : "ok"}`} href={`/trips/${tid}/bookings/${bk.id}`}>
               <span className="bk-ic">
                 <Ic n={bk.ic ?? "ticket"} />
               </span>
@@ -158,19 +162,36 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
                 예약 보기 <Ic n="chevron-right" />
               </em>
             </Go>
-          )}
-          {wi && (
-            <Go onClick={guard} className="plbk ok" href={`/trips/${tid}/wish${wi.wk === "shop" ? "?tab=shop" : ""}`}>
-              <span className="bk-ic" style={wi.wk === "shop" ? { background: "var(--green-s)", color: "var(--green)" } : { background: "var(--acc-s)", color: "var(--acc)" }}>
-                <Ic n={wi.wk === "shop" ? "shopping-bag" : "heart"} />
+          ))}
+          {places.map((wi) => (
+            <Go key={wi.id} onClick={guard} className="plbk ok" href={`/trips/${tid}/wish`}>
+              <span className="bk-ic" style={{ background: "var(--acc-s)", color: "var(--acc)" }}>
+                <Ic n="heart" />
               </span>
               <div className="mid">
                 <b>{wi.title}</b>
-                <span>{wi.wk === "shop" ? "쇼핑 리스트" : "가고싶은곳에서 온 일정"}</span>
+                <span>{wi.sub || "가고싶은곳"}</span>
               </div>
               <em>
                 보기 <Ic n="chevron-right" />
               </em>
+            </Go>
+          ))}
+          {shops.length > 0 && (
+            <Go onClick={guard} className="plshop" href={`/trips/${tid}/wish?tab=shop`}>
+              <div className="ps-h">
+                <Ic n="shopping-bag" />
+                <b>쇼핑 {shops.length}개</b>
+                <em>
+                  쇼핑 리스트 <Ic n="chevron-right" />
+                </em>
+              </div>
+              {shops.map((w) => (
+                <div key={w.id} className="ps-i">
+                  <span>{w.title}</span>
+                  <small>{w.sub}</small>
+                </div>
+              ))}
             </Go>
           )}
 
@@ -238,8 +259,8 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
               <span className="mp-l">연결</span>
               <div className="mp-link" style={{ cursor: "pointer" }} onClick={() => setLp(true)}>
                 <Ic n="link-2" />
-                <span className={bk || wi ? "" : "sub"}>{[bk?.title, wi?.title].filter(Boolean).join(", ") || "예약 · 위시리스트"}</span>
-                <em>{bk || wi ? "바꾸기" : "연결"}</em>
+                <span className={bks.length + wis.length ? "" : "sub"}>{bks.length + wis.length ? [bks.length && `예약 ${bks.length}`, places.length && `가고싶은곳 ${places.length}`, shops.length && `쇼핑 ${shops.length}`].filter(Boolean).join(" · ") : "예약 · 위시리스트"}</span>
+                <em>{bks.length + wis.length ? "바꾸기" : "연결"}</em>
               </div>
             </div>
           </div>
@@ -315,10 +336,10 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
         setTab={setLt}
         bookings={bookings}
         wishes={wishes}
-        bookingId={e.booking_id ?? ""}
-        wishId={e.wish_id ?? ""}
-        setBookingId={(v) => patch({ booking_id: v || null })}
-        setWishId={(v) => patch({ wish_id: v || null })}
+        bookingIds={L.bks}
+        wishIds={L.wis}
+        setBookingIds={(v) => patch({ booking_ids: v, booking_id: v[0] ?? null })}
+        setWishIds={(v) => patch({ wish_ids: v, wish_id: v[0] ?? null })}
       />
     </section>
   );

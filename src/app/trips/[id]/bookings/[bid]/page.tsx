@@ -27,7 +27,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
   const { supabase, trip, members } = await loadTrip(id);
   const [{ data }, ev, ex] = await Promise.all([
     supabase.from("bookings").select("*").eq("id", bid).eq("trip_id", id).maybeSingle(),
-    supabase.from("events").select("id, day").eq("booking_id", bid).order("day"),
+    supabase.from("events").select("id, day").or(`booking_id.eq.${bid},booking_ids.cs.{${bid}}`).order("day"),
     supabase.from("expenses").select("id, pocket_id, payer_id, pockets(name, kind, shared)").eq("booking_id", bid),
   ]);
   if (!data) notFound();

@@ -56,8 +56,8 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
   const [memo, setMemo] = useState("");
   const [link, setLink] = useState(seed?.link ?? "");
   const [file, setFile] = useState<File | null>(null);
-  const [bookingId, setBookingId] = useState("");
-  const [wishId, setWishId] = useState(seed?.id ?? "");
+  const [bookingIds, setBookingIds] = useState<string[]>([]);
+  const [wishIds, setWishIds] = useState<string[]>(seed ? [seed.id] : []);
   const [lp, setLp] = useState(false);
   const [lt, setLt] = useState<"bk" | "wish" | "shop">("bk");
   const [busy, setBusy] = useState(false);
@@ -76,7 +76,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
     if (s.cat) setCat(s.cat);
     if (s.address && !address) setAddress(s.address);
     if (s.link && !link) setLink(s.link);
-    if (fromWish) setWishId(s.id);
+    if (fromWish && !wishIds.includes(s.id)) setWishIds([...wishIds, s.id]);
     setOpen(false);
   }
 
@@ -99,8 +99,10 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
         memo: memo.trim() || null,
         address: address.trim() || null,
         link: link.trim() || null,
-        booking_id: bookingId || null,
-        wish_id: wishId || null,
+        booking_id: bookingIds[0] ?? null,
+        wish_id: wishIds[0] ?? null,
+        ...(bookingIds.length ? { booking_ids: bookingIds } : {}),
+        ...(wishIds.length ? { wish_ids: wishIds } : {}),
       })
       .select("id")
       .single();
@@ -120,8 +122,8 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
     router.refresh();
   }
 
-  const bk = bookings.find((b) => b.id === bookingId);
-  const wi = wishes.find((w) => w.id === wishId);
+  const bks = bookingIds.map((id) => bookings.find((b) => b.id === id)).filter((x): x is LinkOpt => !!x);
+  const wis = wishIds.map((id) => wishes.find((w) => w.id === id)).filter((x): x is LinkOpt => !!x);
 
   return (
     <section className="screen on hasbar" id="eventAdd">
@@ -321,32 +323,32 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
                 </span>
               </label>
               <div className="lkbox">
-                {bk && (
-                  <div className="lkc k-bk">
+                {bks.map((bk) => (
+                  <div key={bk.id} className="lkc k-bk">
                     <Ic n={bk.ic ?? "ticket"} />
                     <span>
                       <em>예약</em>
                       {bk.title}
                     </span>
-                    <b className="x" onClick={() => setBookingId("")}>
+                    <b className="x" onClick={() => setBookingIds(bookingIds.filter((x) => x !== bk.id))}>
                       <Ic n="x" />
                     </b>
                   </div>
-                )}
-                {wi && (
-                  <div className="lkc k-wish">
+                ))}
+                {wis.map((wi) => (
+                  <div key={wi.id} className="lkc k-wish">
                     <Ic n={wi.wk === "shop" ? "shopping-bag" : "heart"} />
                     <span>
                       <em>{wi.wk === "shop" ? "쇼핑" : "가고싶은곳"}</em>
                       {wi.title}
                     </span>
-                    <b className="x" onClick={() => setWishId("")}>
+                    <b className="x" onClick={() => setWishIds(wishIds.filter((x) => x !== wi.id))}>
                       <Ic n="x" />
                     </b>
                   </div>
-                )}
+                ))}
                 <div className="lkadd" onClick={() => setLp(true)}>
-                  <Ic n={bk || wi ? "plus" : "link-2"} /> {bk || wi ? "더 연결" : "예약 · 위시리스트 연결"}
+                  <Ic n={bks.length + wis.length ? "plus" : "link-2"} /> {bks.length + wis.length ? "더 연결" : "예약 · 위시리스트 연결"}
                 </div>
               </div>
             </>
@@ -354,7 +356,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
         </div>
       </div>
 
-      <LinkPick open={lp} onClose={() => setLp(false)} tab={lt} setTab={setLt} bookings={bookings} wishes={wishes} bookingId={bookingId} wishId={wishId} setBookingId={setBookingId} setWishId={setWishId} />
+      <LinkPick open={lp} onClose={() => setLp(false)} tab={lt} setTab={setLt} bookings={bookings} wishes={wishes} bookingIds={bookingIds} wishIds={wishIds} setBookingIds={setBookingIds} setWishIds={setWishIds} />
       <SaveBar on={!!title.trim()} busy={busy} onSave={save} />
     </section>
   );
@@ -367,10 +369,10 @@ export function LinkPick({
   setTab,
   bookings,
   wishes,
-  bookingId,
-  wishId,
-  setBookingId,
-  setWishId,
+  bookingIds,
+  wishIds,
+  setBookingIds,
+  setWishIds,
 }: {
   open: boolean;
   onClose: () => void;
@@ -378,42 +380,49 @@ export function LinkPick({
   setTab: (t: "bk" | "wish" | "shop") => void;
   bookings: LinkOpt[];
   wishes: LinkOpt[];
-  bookingId: string;
-  wishId: string;
-  setBookingId: (v: string) => void;
-  setWishId: (v: string) => void;
+  bookingIds: string[];
+  wishIds: string[];
+  setBookingIds: (v: string[]) => void;
+  setWishIds: (v: string[]) => void;
 }) {
   const src = tab === "bk" ? bookings : wishes.filter((w) => (tab === "shop" ? w.wk === "shop" : w.wk !== "shop"));
-  const cur = tab === "bk" ? bookingId : wishId;
-  const set = tab === "bk" ? setBookingId : setWishId;
-  const n = (bookingId ? 1 : 0) + (wishId ? 1 : 0);
+  const cur = tab === "bk" ? bookingIds : wishIds;
+  const set = tab === "bk" ? setBookingIds : setWishIds;
+  const n = bookingIds.length + wishIds.length;
+  const cnt = (t: "bk" | "wish" | "shop") => (t === "bk" ? bookingIds.length : wishIds.filter((id) => wishes.find((w) => w.id === id && (t === "shop" ? w.wk === "shop" : w.wk !== "shop"))).length);
   return (
     <Sheet open={open} onClose={onClose} title="연결하기" id="linkPick">
       <div className="lk-tabs">
-        <span className={tab === "bk" ? "on" : ""} onClick={() => setTab("bk")}>
-          예약
-        </span>
-        <span className={tab === "wish" ? "on" : ""} onClick={() => setTab("wish")}>
-          가고싶은곳
-        </span>
-        <span className={tab === "shop" ? "on" : ""} onClick={() => setTab("shop")}>
-          쇼핑
-        </span>
+        {(
+          [
+            ["bk", "예약"],
+            ["wish", "가고싶은곳"],
+            ["shop", "쇼핑"],
+          ] as const
+        ).map(([k, l]) => (
+          <span key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
+            {l}
+            {cnt(k) ? ` ${cnt(k)}` : ""}
+          </span>
+        ))}
       </div>
       <div className="lk-list">
         {src.length === 0 && <div className="noresult" style={{ display: "block" }}>{tab === "bk" ? "예약이 없어요" : tab === "shop" ? "쇼핑 항목이 없어요" : "가고싶은곳이 없어요"}</div>}
-        {src.map((it) => (
-          <div key={it.id} className={`lk-i${cur === it.id ? " on" : ""}`} onClick={() => set(cur === it.id ? "" : it.id)}>
-            <span className={`evi ${it.c ?? (tab === "bk" ? "blue" : "acc")} xs`}>
-              <Ic n={it.ic ?? (tab === "bk" ? "ticket" : "heart")} />
-            </span>
-            <div className="mid">
-              <b>{it.title}</b>
-              <span>{it.sub ?? ""}</span>
+        {src.map((it) => {
+          const on = cur.includes(it.id);
+          return (
+            <div key={it.id} className={`lk-i${on ? " on" : ""}`} onClick={() => set(on ? cur.filter((x) => x !== it.id) : [...cur, it.id])}>
+              <span className={`evi ${it.c ?? (tab === "bk" ? "blue" : "acc")} xs`}>
+                <Ic n={it.ic ?? (tab === "bk" ? "ticket" : "heart")} />
+              </span>
+              <div className="mid">
+                <b>{it.title}</b>
+                <span>{it.sub ?? ""}</span>
+              </div>
+              <i className="ck" />
             </div>
-            <i className="ck" />
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div
         className="bigbtn"
