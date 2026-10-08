@@ -176,12 +176,14 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
                 공동경비
               </span>
             )}
-            {members.map((m) => (
-              <span key={m.id} className={payer === m.id ? "on" : ""} onClick={() => pickPayer(m.id)}>
-                <i style={{ background: m.color }}>{m.nickname.slice(0, 1)}</i>
-                {m.id === me ? "나" : m.nickname}
-              </span>
-            ))}
+            {members
+              .filter((m) => m.id === me || (expense && expense.payer_id === m.id))
+              .map((m) => (
+                <span key={m.id} className={payer === m.id ? "on" : ""} onClick={() => pickPayer(m.id)}>
+                  <i style={{ background: m.color }}>{m.nickname.slice(0, 1)}</i>
+                  {m.id === me ? "내 지출" : `${m.nickname} 냄`}
+                </span>
+              ))}
           </div>
 
           {list.length > 0 && (

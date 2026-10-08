@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { loadMoney } from "@/lib/moneyload";
 import { days, mdLong, parseDate, weekday } from "@/lib/format";
 import { CURRENCIES } from "@/lib/places";
-import { EXP_CATS, expCat, money, pkStyle, pocketUse, settle, sym, toKrw } from "@/lib/money";
+import { EXP_CATS, expCat, isTeam, money, pkStyle, pocketUse, settle, sym, toKrw } from "@/lib/money";
 import Go from "@/components/Go";
 import TripTitle from "@/components/TripTitle";
 import Ic, { type IcName } from "@/components/Ic";
@@ -12,7 +12,7 @@ import type { Expense } from "@/lib/types";
 export default async function MoneyPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; d?: string }> }) {
   const { id } = await params;
   const { tab = "pocket", d = "all" } = await searchParams;
-  const { trip, user, members, pockets, expenses, transfers, topups, people } = await loadMoney(id);
+  const { trip, user, members, pockets, expenses, allExpenses, transfers, topups, people } = await loadMoney(id);
   const ds = days(trip.start_date, trip.end_date);
   const person = (pid: string | null) => people.find((p) => p.id === pid);
   const krw = (e: Expense) => toKrw(Number(e.amount), e.currency, trip);
@@ -166,8 +166,6 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
   function ListTab() {
     type Row = { key: string; day: string; sort: string; el: React.ReactNode; krw: number; cur?: string; amt?: number };
     const rows: Row[] = expenses.map((e) => {
-      const pk = pockets.find((p) => p.id === e.pocket_id);
-      const payer = person(e.payer_id);
       const c = expCat(e.category);
       const split = e.split?.members?.length ?? 0;
       return {
@@ -187,13 +185,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
               <div className="s">
                 {[e.time_text].filter(Boolean).join("")}
                 {e.time_text ? " · " : ""}
-                {!e.payer_id ? (
-                  <span className="pk team">{pk?.name ?? "공동경비"}</span>
-                ) : pk ? (
-                  <span className={`pk ${pk.kind}`}>{pk.name}</span>
-                ) : (
-                  <span className="pk bank">{payer?.id === user.id ? "내가 냄" : `${payer?.nickname ?? ""} 냄`}</span>
-                )}
+                {isTeam(e, user.id) ? <span className="pk team">공동경비</span> : <span className="pk bank">내 지출</span>}
                 {e.booking_id && (
                   <>
                     {" · "}
@@ -333,7 +325,7 @@ export default async function MoneyPage({ params, searchParams }: { params: Prom
       { name: "미지정", color: "var(--sub)", v: expenses.filter((e) => !e.pocket_id).reduce((s, e) => s + krw(e), 0) },
     ].filter((x) => x.v > 0);
     const pmax = Math.max(1, ...byPocket.map((x) => x.v));
-    const st = settle(trip, members, expenses, transfers);
+    const st = settle(trip, members, allExpenses, transfers);
     const pp = (x: string) => person(x) ?? { nickname: "?", color: "#8B95A1" };
     return (
       <div className="pad" style={{ paddingBottom: 24 }}>

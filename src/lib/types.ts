@@ -89,6 +89,7 @@ export type Expense = {
   split: { members: string[]; mode?: "eq" | "own"; shares?: Record<string, number> } | null;
   booking_id: string | null;
   photos?: string[];
+  created_by?: string | null;
 };
 
 export type Topup = { id: string; trip_id: string; pocket_id: string; amount: number; how: string | null; day: string | null; rate_text: string | null; krw: number | null; memo: string | null; created_at: string };
@@ -120,6 +121,8 @@ export type Wish = {
   photos: string[];
   status: string | null;
   shop_group: string | null;
+  shared?: boolean;
+  created_by?: string | null;
 };
 
 export type Entry = {

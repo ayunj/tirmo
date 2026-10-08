@@ -7,7 +7,7 @@ import { MoveRow, SettleButtons, UndoTransfer } from "@/components/SettleActions
 
 export default async function SettlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { trip, members, expenses, transfers, people } = await loadMoney(id);
+  const { trip, members, allExpenses: expenses, transfers, people } = await loadMoney(id);
   const st = settle(trip, members, expenses, transfers);
   const p = (x: string) => people.find((m) => m.id === x) ?? { id: x, nickname: "?", color: "#8B95A1" };
   const max = Math.max(1, ...Object.values(st.paid));

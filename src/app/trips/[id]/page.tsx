@@ -2,7 +2,7 @@ import { loadTrip } from "@/lib/trip";
 import { byEv, dday, days, md, normTime, range, today } from "@/lib/format";
 import { catColor } from "@/lib/places";
 import { coverDate, cv } from "@/lib/cover";
-import { money, pocketUse, sym } from "@/lib/money";
+import { money, pocketUse, sym, visibleMoney } from "@/lib/money";
 import Go from "@/components/Go";
 import Ic from "@/components/Ic";
 import { CvFlags, Names } from "@/components/TripFlags";
@@ -15,7 +15,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   const [ev, bk, wi, pk, po, ex, en] = await Promise.all([
     supabase.from("events").select("*").eq("trip_id", id).order("sort"),
     supabase.from("bookings").select("*").eq("trip_id", id).order("sort_key", { nullsFirst: false }),
-    supabase.from("wishes").select("id", { count: "exact", head: true }).eq("trip_id", id).eq("kind", "place"),
+    supabase.from("wishes").select("*").eq("trip_id", id).eq("kind", "place"),
     supabase.from("pack_items").select("done").eq("trip_id", id).or(`assignee.eq.${user.id},assignee.is.null`),
     supabase.from("pockets").select("*").eq("trip_id", id),
     supabase.from("expenses").select("*").eq("trip_id", id),
@@ -23,8 +23,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   ]);
   const events = (ev.data ?? []) as EventRow[];
   const bookings = (bk.data ?? []) as Booking[];
-  const pockets = (po.data ?? []) as Pocket[];
-  const expenses = (ex.data ?? []) as Expense[];
+  const { pockets, expenses } = visibleMoney((po.data ?? []) as Pocket[], (ex.data ?? []) as Expense[], user.id);
   const packs = pk.data ?? [];
   const ds = days(trip.start_date, trip.end_date);
   const now = today();
@@ -100,7 +99,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               </Go>
               <Go href={`/trips/${id}/wish`}>
                 <Ic n="heart" />
-                <b>{wi.count ?? 0}곳</b>
+                <b>{(wi.data ?? []).filter((w) => w.created_by === user.id || w.shared !== false).length}곳</b>
                 <span>가고싶은곳</span>
               </Go>
             </div>

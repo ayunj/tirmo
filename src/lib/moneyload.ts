@@ -1,4 +1,5 @@
 import { loadTrip } from "@/lib/trip";
+import { visibleMoney } from "@/lib/money";
 import type { Expense, Pocket, Topup, Transfer } from "@/lib/types";
 
 export async function loadMoney(id: string) {
@@ -10,5 +11,7 @@ export async function loadMoney(id: string) {
     t.supabase.from("topups").select("*").eq("trip_id", id).order("created_at"),
   ]);
   const people = t.members.map((m) => ({ id: m.user_id, nickname: m.profiles?.nickname || "?", color: m.profiles?.color || "#8B95A1" }));
-  return { ...t, pockets: (p.data ?? []) as Pocket[], expenses: (e.data ?? []) as Expense[], transfers: (tr.data ?? []) as Transfer[], topups: (tu.data ?? []) as Topup[], people };
+  const all = (e.data ?? []) as Expense[];
+  const vis = visibleMoney((p.data ?? []) as Pocket[], all, t.user.id);
+  return { ...t, pockets: vis.pockets, expenses: vis.expenses, allExpenses: all, transfers: (tr.data ?? []) as Transfer[], topups: (tu.data ?? []) as Topup[], people };
 }

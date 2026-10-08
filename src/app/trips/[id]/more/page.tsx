@@ -12,7 +12,7 @@ export default async function MorePage({ params }: { params: Promise<{ id: strin
   const [bk, pk, ws, en, me] = await Promise.all([
     supabase.from("bookings").select("kind").eq("trip_id", id),
     supabase.from("pack_items").select("done").eq("trip_id", id).or(`assignee.eq.${user.id},assignee.is.null`),
-    supabase.from("wishes").select("kind").eq("trip_id", id),
+    supabase.from("wishes").select("*").eq("trip_id", id),
     supabase.from("entries").select("photos").eq("trip_id", id).eq("created_by", user.id),
     supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle(),
   ]);
@@ -20,8 +20,9 @@ export default async function MorePage({ params }: { params: Promise<{ id: strin
   const packs = pk.data ?? [];
   const nEn = (en.data ?? []).length;
   const nPh = (en.data ?? []).reduce((s, e) => s + (e.photos as string[]).length, 0);
-  const wPlace = (ws.data ?? []).filter((w) => w.kind === "place").length;
-  const wShop = (ws.data ?? []).length - wPlace;
+  const wv = (ws.data ?? []).filter((w) => w.created_by === user.id || w.shared !== false);
+  const wPlace = wv.filter((w) => w.kind === "place").length;
+  const wShop = wv.length - wPlace;
   const c = CURRENCIES[trip.currency];
   const b = `/trips/${id}`;
   const tiles: [string, IcName, string, string, string][] = [

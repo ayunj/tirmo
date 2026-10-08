@@ -64,3 +64,5 @@ body{letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoo
 /* 준비물: 전체 준비물 표시 (배지 없이 굵은 회색 글씨) */
 .pi .pshared{margin-left:auto;font-size:12px;font-weight:800;color:var(--sub)}
 .pi .pshared + .pin{margin-left:8px}
+/* 위시리스트: 공유한 것 표시 */
+.wshared{font-style:normal;font-weight:800;color:var(--sub)}

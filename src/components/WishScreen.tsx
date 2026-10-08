@@ -19,10 +19,10 @@ type St = (typeof SEQ)[number];
 const stOf = (s: string | null): St => (s === "done" ? "buy" : SEQ.includes(s as St) ? (s as St) : "todo");
 const StIc = ({ s }: { s: St }) => <i className={`st ${s}`}>{s === "buy" ? <Ic n="check" /> : s === "no" ? <Ic n="x" /> : s === "q" ? "?" : null}</i>;
 
-type Props = { tripId: string; head: { title: string; start_date: string | null; end_date: string | null }; tab: "place" | "shop"; wishes: Wish[]; days: string[]; events: DayEv[]; planned: Record<string, string | null> };
+type Props = { tripId: string; head: { title: string; start_date: string | null; end_date: string | null }; tab: "place" | "shop"; wishes: Wish[]; days: string[]; events: DayEv[]; planned: Record<string, string | null>; me: string; together: boolean };
 
 /** 위시리스트 (목업 wish + wishItem · shopItem · planPick 창) */
-export default function WishScreen({ tripId, head, tab, wishes, days, events, planned }: Props) {
+export default function WishScreen({ tripId, head, tab, wishes, days, events, planned, me, together }: Props) {
   const router = useRouter();
   const places = wishes.filter((w) => w.kind === "place");
   const shops = wishes.filter((w) => w.kind === "shop");
@@ -39,6 +39,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
   const [newGroup, setNewGroup] = useState(false);
   const [pp, setPp] = useState<Wish | null>(null);
   const [busy, setBusy] = useState(false);
+  const [share, setShare] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const groups = Array.from(new Set(shops.map((s) => s.shop_group || "")));
   groups.sort((a, b) => (a === "" ? 1 : b === "" ? -1 : 0));
@@ -52,6 +53,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
     setLink(w?.link ?? "");
     setPic(w?.photos?.[0] ?? null);
     setFile(null);
+    setShare(w ? w.shared !== false : false);
     setSheet("place");
   }
   function openShop(w: Wish | null) {
@@ -63,6 +65,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
     setSt(stOf(w?.status ?? null));
     setGroup(w ? w.shop_group ?? "" : groups.filter(Boolean).slice(-1)[0] ?? "");
     setNewGroup(false);
+    setShare(w ? w.shared !== false : false);
     setSheet("shop");
   }
 
@@ -81,6 +84,7 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
     const row: Record<string, unknown> = isPlace
       ? { trip_id: tripId, kind: "place", name: name.trim(), category: kind || null, memo: memo.trim() || null, link: link.trim() || null, photos: photo ? [photo] : [] }
       : { trip_id: tripId, kind: "shop", name: name.trim(), status: st, shop_group: group.trim() || null, memo: memo.trim() || null, photos: photo ? [photo] : [] };
+    if (together && (!cur || cur.created_by === me)) row.shared = share;
     const supabase = createClient();
     const { error } = cur ? await supabase.from("wishes").update(row).eq("id", cur.id) : await supabase.from("wishes").insert(row);
     setBusy(false);
@@ -155,7 +159,10 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
                         {s && <span className="tag acc">{s}</span>}
                       </div>
                       <b>{w.name}</b>
-                      <span>{w.memo || k?.[0] || ""}</span>
+                      <span>
+                        {together && w.shared !== false && <em className="wshared">공유 · </em>}
+                        {w.memo || k?.[0] || ""}
+                      </span>
                       {!s && (
                         <em
                           onClick={(e) => {
@@ -222,7 +229,12 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
                             )}
                             <span className={`sn${s === "no" ? " strike" : ""}`}>
                               <b>{w.name}</b>
-                              {w.memo && <small>{w.memo}</small>}
+                              {(w.memo || (together && w.shared !== false)) && (
+                                <small>
+                                  {together && w.shared !== false && <em className="wshared">공유{w.memo ? " · " : ""}</em>}
+                                  {w.memo}
+                                </small>
+                              )}
                             </span>
                           </div>
                         );
@@ -291,6 +303,15 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
           <div className="wi-st">
             <Ic n="calendar-days" />
             <span>{status(cur) ? `${status(cur)} 일정에 있어요` : "아직 일정에 없어요"}</span>
+          </div>
+        )}
+        {together && (!cur || cur.created_by === me) && (
+          <div className="switches" style={{ marginTop: 14 }}>
+            <div onClick={() => setShare(!share)}>
+              <Ic n="users" />
+              <span>공유 (같이 가는 사람도 봐요)</span>
+              <i className={`sw${share ? " on" : ""}`} />
+            </div>
           </div>
         )}
         <div className="btns2" id="wiBtns">
@@ -375,6 +396,15 @@ export default function WishScreen({ tripId, head, tab, wishes, days, events, pl
         {newGroup && <input className="inp" autoFocus value={group} onChange={(e) => setGroup(e.target.value)} placeholder="예) 돈키호테, 드럭스토어" style={{ marginTop: 8 }} />}
         <label className="flab">메모</label>
         <input className="inp wi-f" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="가격, 개수, 누구 선물" />
+        {together && (!cur || cur.created_by === me) && (
+          <div className="switches" style={{ marginTop: 14 }}>
+            <div onClick={() => setShare(!share)}>
+              <Ic n="users" />
+              <span>공유 (같이 가는 사람도 봐요)</span>
+              <i className={`sw${share ? " on" : ""}`} />
+            </div>
+          </div>
+        )}
         <div className="btns2" id="siBtns">
           <div onClick={() => !busy && save()}>{busy ? "저장 중" : cur ? "저장" : "추가"}</div>
           {cur && (

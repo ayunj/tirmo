@@ -88,3 +88,14 @@ const PK: Record<string, { ic: "banknote" | "credit-card" | "landmark"; c: strin
   bank: { ic: "landmark", c: "green", color: "var(--green)" },
 };
 export const pkStyle = (p: Pick<Pocket, "kind" | "shared">) => (p.shared ? { ...PK[p.kind], c: "acc", color: "var(--acc)" } : PK[p.kind]);
+
+/** 경비는 각자 것 + 공동경비만 보여요 (정산은 모두의 지출로 계산) */
+export function visibleMoney<P extends { id: string; shared: boolean; owner_id: string | null }, E extends { pocket_id: string | null; payer_id: string | null; split?: { members?: string[] } | null; created_by?: string | null }>(pockets: P[], expenses: E[], me: string) {
+  const sharedPk = new Set(pockets.filter((p) => p.shared).map((p) => p.id));
+  const ps = pockets.filter((p) => p.shared || !p.owner_id || p.owner_id === me);
+  const es = expenses.filter((e) => !e.payer_id || (e.pocket_id && sharedPk.has(e.pocket_id)) || e.payer_id === me || e.created_by === me || (e.split?.members ?? []).includes(me));
+  return { pockets: ps, expenses: es };
+}
+
+/** 내역에 붙는 말: 내 지출 / 공동경비 */
+export const isTeam = (e: { payer_id: string | null; split?: { members?: string[] } | null }, me: string) => !e.payer_id || e.payer_id !== me || (e.split?.members?.length ?? 0) > 1;
