@@ -11,7 +11,7 @@ export default async function MorePage({ params }: { params: Promise<{ id: strin
   const { supabase, trip, members, user } = await loadTrip(id);
   const [bk, pk, ws, en, me] = await Promise.all([
     supabase.from("bookings").select("kind").eq("trip_id", id),
-    supabase.from("pack_items").select("done").eq("trip_id", id),
+    supabase.from("pack_items").select("done").eq("trip_id", id).or(`assignee.eq.${user.id},assignee.is.null`),
     supabase.from("wishes").select("kind").eq("trip_id", id),
     supabase.from("entries").select("photos").eq("trip_id", id),
     supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle(),

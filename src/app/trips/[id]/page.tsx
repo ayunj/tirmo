@@ -11,12 +11,12 @@ import type { Booking, EventRow, Expense, Pocket } from "@/lib/types";
 
 export default async function TripHome({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, trip, members } = await loadTrip(id);
+  const { supabase, trip, members, user } = await loadTrip(id);
   const [ev, bk, wi, pk, po, ex, en] = await Promise.all([
     supabase.from("events").select("*").eq("trip_id", id).order("sort"),
     supabase.from("bookings").select("*").eq("trip_id", id).order("sort_key", { nullsFirst: false }),
     supabase.from("wishes").select("id", { count: "exact", head: true }).eq("trip_id", id).eq("kind", "place"),
-    supabase.from("pack_items").select("done").eq("trip_id", id),
+    supabase.from("pack_items").select("done").eq("trip_id", id).or(`assignee.eq.${user.id},assignee.is.null`),
     supabase.from("pockets").select("*").eq("trip_id", id),
     supabase.from("expenses").select("*").eq("trip_id", id),
     supabase.from("entries").select("id", { count: "exact", head: true }).eq("trip_id", id),

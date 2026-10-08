@@ -61,3 +61,6 @@ body{letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoo
 .dday{background:none!important;color:var(--ink)!important;padding:0!important;font-size:17px!important;font-weight:800!important}
 /* 예산 카드: 이름 옆 배지(통화 · 공동 · 이름) 없이 굵은 글씨만 */
 .pocket .pk-h .mid .cur,.pocket .pk-h .mid .tag{background:none!important;color:var(--sub)!important;padding:0 0 0 6px!important;font-size:12px!important;font-weight:800!important;border:0!important}
+/* 준비물: 다 같이 챙길 것 표시 (배지 없이 굵은 회색 글씨) */
+.pi .pshared{margin-left:auto;font-size:12px;font-weight:800;color:var(--sub)}
+.pi .pshared + .pin{margin-left:8px}
