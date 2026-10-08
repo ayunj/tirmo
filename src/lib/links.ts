@@ -15,10 +15,10 @@ const BK_IC: Record<string, [IcName, string, string]> = {
 const md = (s: string) => `${+s.split("-")[1]}/${+s.split("-")[2]}`;
 
 /** 일정에 연결 · 추천할 예약 · 가고싶은곳 · 자주 가는 곳 */
-export async function linkOptions(supabase: SupabaseClient, tripId: string) {
+export async function linkOptions(supabase: SupabaseClient, tripId: string, me?: string) {
   const [b, w, e] = await Promise.all([
     supabase.from("bookings").select("id, kind, title, details, status").eq("trip_id", tripId).order("sort_key", { nullsFirst: false }),
-    supabase.from("wishes").select("id, name, category, address, link").eq("trip_id", tripId).eq("kind", "place").order("created_at"),
+    supabase.from("wishes").select("*").eq("trip_id", tripId).order("created_at"),
     supabase.from("events").select("title, category, address").eq("trip_id", tripId),
   ]);
   const bookings = ((b.data ?? []) as (Pick<Booking, "id" | "kind" | "title" | "details" | "status">)[]).map((x) => {
@@ -26,7 +26,13 @@ export async function linkOptions(supabase: SupabaseClient, tripId: string) {
     const [ic, c, cat] = BK_IC[x.kind] ?? BK_IC.etc;
     return { id: x.id, title: bookingTitle(x), sub: [w2.date ? `${md(w2.date)}${w2.time ? ` ${w2.time}` : ""}` : "", x.status].filter(Boolean).join(" · "), ic, c, cat, address: x.details?.address ?? null, kind: x.kind, status: x.status ?? undefined };
   });
-  const wishes = (w.data ?? []).map((x) => ({ id: x.id as string, title: x.name as string, cat: wishKind(x.category as string)?.[2] ?? "기타", address: x.address as string | null, link: x.link as string | null, sub: [x.category, x.address].filter(Boolean).join(" · ") }));
+  const wishes = (w.data ?? [])
+    .filter((x) => !me || x.created_by === me || x.shared !== false)
+    .map((x) =>
+      x.kind === "shop"
+        ? { id: x.id as string, wk: "shop" as const, title: x.name as string, cat: "쇼핑", address: null, link: null, sub: [x.shop_group || "미지정", x.memo?.split("\n")[0]].filter(Boolean).join(" · "), ic: "shopping-bag" as IcName, c: "green" }
+        : { id: x.id as string, wk: "place" as const, title: x.name as string, cat: wishKind(x.category as string)?.[2] ?? "기타", address: x.address as string | null, link: x.link as string | null, sub: [x.category, x.address].filter(Boolean).join(" · ") },
+    );
   // 자주 가는 곳: 숙소 + 이 여행에서 두 번 이상 쓴 이름
   const cnt = new Map<string, { n: number; cat: string; address: string | null }>();
   for (const r of e.data ?? []) {

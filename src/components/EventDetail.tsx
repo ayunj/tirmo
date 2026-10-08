@@ -24,7 +24,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
   const [editTitle, setEditTitle] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [lp, setLp] = useState(false);
-  const [lt, setLt] = useState<"bk" | "wish">("bk");
+  const [lt, setLt] = useState<"bk" | "wish" | "shop">("bk");
   const [up, setUp] = useState(false);
   const [tm, setTm] = useState(normTime(ev.time_text));
   const c = evCat(e.category);
@@ -160,13 +160,13 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
             </Go>
           )}
           {wi && (
-            <Go onClick={guard} className="plbk ok" href={`/trips/${tid}/wish`}>
-              <span className="bk-ic" style={{ background: "var(--acc-s)", color: "var(--acc)" }}>
-                <Ic n="heart" />
+            <Go onClick={guard} className="plbk ok" href={`/trips/${tid}/wish${wi.wk === "shop" ? "?tab=shop" : ""}`}>
+              <span className="bk-ic" style={wi.wk === "shop" ? { background: "var(--green-s)", color: "var(--green)" } : { background: "var(--acc-s)", color: "var(--acc)" }}>
+                <Ic n={wi.wk === "shop" ? "shopping-bag" : "heart"} />
               </span>
               <div className="mid">
                 <b>{wi.title}</b>
-                <span>가고싶은곳에서 온 일정</span>
+                <span>{wi.wk === "shop" ? "쇼핑 리스트" : "가고싶은곳에서 온 일정"}</span>
               </div>
               <em>
                 보기 <Ic n="chevron-right" />
@@ -238,7 +238,7 @@ export default function EventDetail({ ev, days, bookings, wishes, records, putDa
               <span className="mp-l">연결</span>
               <div className="mp-link" style={{ cursor: "pointer" }} onClick={() => setLp(true)}>
                 <Ic n="link-2" />
-                <span className={bk || wi ? "" : "sub"}>{[bk?.title, wi?.title].filter(Boolean).join(", ") || "예약 · 가고싶은곳"}</span>
+                <span className={bk || wi ? "" : "sub"}>{[bk?.title, wi?.title].filter(Boolean).join(", ") || "예약 · 위시리스트"}</span>
                 <em>{bk || wi ? "바꾸기" : "연결"}</em>
               </div>
             </div>

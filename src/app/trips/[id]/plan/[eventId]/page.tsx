@@ -12,7 +12,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   const ds = days(trip.start_date, trip.end_date);
   const [{ data }, opts, rec] = await Promise.all([
     supabase.from("events").select("*").eq("id", eventId).eq("trip_id", id).maybeSingle(),
-    linkOptions(supabase, id),
+    linkOptions(supabase, id, user.id),
     supabase.from("entries").select("id, title, body, photos, day, time_text").eq("event_id", eventId).eq("created_by", user.id).order("created_at"),
   ]);
   if (!data) notFound();

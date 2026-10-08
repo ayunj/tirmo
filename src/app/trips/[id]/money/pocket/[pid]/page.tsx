@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { loadMoney } from "@/lib/moneyload";
-import { days, parseDate, weekday } from "@/lib/format";
+import { days } from "@/lib/format";
 import { expCat, money, pocketUse, sym, toKrw } from "@/lib/money";
 import Go from "@/components/Go";
 import Ic, { type IcName } from "@/components/Ic";
@@ -109,20 +109,10 @@ export default async function PocketDetail({ params, searchParams }: { params: P
               {spent.length}건 · {money(spentSum, sym(p.currency))}
             </span>
           </div>
-          <div className="dsel" style={{ margin: "8px -16px 10px", padding: "0 16px" }}>
-            <Go className={d === "all" ? "on" : ""} href={here} replace keep>
-              <span>전체</span>
-              <b>A</b>
-            </Go>
-            <Go className={d === "pre" ? "on" : ""} href={`${here}?d=pre`} replace keep>
-              <span>준비</span>
-              <b>P</b>
-            </Go>
-            <i />
-            {ds.map((x) => (
-              <Go key={x} className={`${d === x ? "on" : ""}${weekday(x) === "일" ? " sun" : ""}`} href={`${here}?d=${x}`} replace keep>
-                <span>{weekday(x)}</span>
-                <b>{parseDate(x).getDate()}</b>
+          <div className="pdays">
+            {[["all", "전체"], ["pre", "준비"], ...ds.map((x) => [x, `${+x.split("-")[1]}/${+x.split("-")[2]}`])].map(([k, l]) => (
+              <Go key={k} as="span" className={d === k ? "on" : ""} href={k === "all" ? here : `${here}?d=${k}`} replace keep>
+                {l}
               </Go>
             ))}
           </div>

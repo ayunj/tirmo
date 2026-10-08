@@ -14,7 +14,7 @@ import Ic, { type IcName } from "@/components/Ic";
 import Sheet from "@/components/ui/Sheet";
 import type { EventRow } from "@/lib/types";
 
-export type LinkOpt = { id: string; title: string; sub?: string; ic?: IcName; c?: string; address?: string | null; link?: string | null; cat?: string };
+export type LinkOpt = { id: string; wk?: "place" | "shop"; title: string; sub?: string; ic?: IcName; c?: string; address?: string | null; link?: string | null; cat?: string };
 type DayEv = Pick<EventRow, "id" | "day" | "time_text" | "sort" | "title">;
 
 type Props = {
@@ -58,7 +58,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
   const [bookingId, setBookingId] = useState("");
   const [wishId, setWishId] = useState(seed?.id ?? "");
   const [lp, setLp] = useState(false);
-  const [lt, setLt] = useState<"bk" | "wish">("bk");
+  const [lt, setLt] = useState<"bk" | "wish" | "shop">("bk");
   const [busy, setBusy] = useState(false);
 
   const list = useMemo(() => dayEvents.filter((e) => (day === "none" ? !e.day : e.day === day)).sort(byEv), [dayEvents, day]);
@@ -68,7 +68,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
   const name = title.trim() || "새 일정";
   const q = title.trim();
   const sugF = frequent.filter((s) => !q || s.title.includes(q));
-  const sugW = wishes.filter((s) => !q || s.title.includes(q));
+  const sugW = wishes.filter((s) => s.wk !== "shop" && (!q || s.title.includes(q)));
 
   function pickSug(s: LinkOpt, fromWish: boolean) {
     setTitle(s.title);
@@ -334,9 +334,9 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
                 )}
                 {wi && (
                   <div className="lkc k-wish">
-                    <Ic n="heart" />
+                    <Ic n={wi.wk === "shop" ? "shopping-bag" : "heart"} />
                     <span>
-                      <em>가고싶은곳</em>
+                      <em>{wi.wk === "shop" ? "쇼핑" : "가고싶은곳"}</em>
                       {wi.title}
                     </span>
                     <b className="x" onClick={() => setWishId("")}>
@@ -345,7 +345,7 @@ export default function EventForm({ tripId, days, dayEvents, defaultDay, booking
                   </div>
                 )}
                 <div className="lkadd" onClick={() => setLp(true)}>
-                  <Ic n={bk || wi ? "plus" : "link-2"} /> {bk || wi ? "더 연결" : "예약 · 가고싶은곳 연결"}
+                  <Ic n={bk || wi ? "plus" : "link-2"} /> {bk || wi ? "더 연결" : "예약 · 위시리스트 연결"}
                 </div>
               </div>
             </>
@@ -373,8 +373,8 @@ export function LinkPick({
 }: {
   open: boolean;
   onClose: () => void;
-  tab: "bk" | "wish";
-  setTab: (t: "bk" | "wish") => void;
+  tab: "bk" | "wish" | "shop";
+  setTab: (t: "bk" | "wish" | "shop") => void;
   bookings: LinkOpt[];
   wishes: LinkOpt[];
   bookingId: string;
@@ -382,7 +382,7 @@ export function LinkPick({
   setBookingId: (v: string) => void;
   setWishId: (v: string) => void;
 }) {
-  const src = tab === "bk" ? bookings : wishes;
+  const src = tab === "bk" ? bookings : wishes.filter((w) => (tab === "shop" ? w.wk === "shop" : w.wk !== "shop"));
   const cur = tab === "bk" ? bookingId : wishId;
   const set = tab === "bk" ? setBookingId : setWishId;
   const n = (bookingId ? 1 : 0) + (wishId ? 1 : 0);
@@ -395,9 +395,12 @@ export function LinkPick({
         <span className={tab === "wish" ? "on" : ""} onClick={() => setTab("wish")}>
           가고싶은곳
         </span>
+        <span className={tab === "shop" ? "on" : ""} onClick={() => setTab("shop")}>
+          쇼핑
+        </span>
       </div>
       <div className="lk-list">
-        {src.length === 0 && <div className="noresult" style={{ display: "block" }}>{tab === "bk" ? "예약이 없어요" : "가고싶은곳이 없어요"}</div>}
+        {src.length === 0 && <div className="noresult" style={{ display: "block" }}>{tab === "bk" ? "예약이 없어요" : tab === "shop" ? "쇼핑 항목이 없어요" : "가고싶은곳이 없어요"}</div>}
         {src.map((it) => (
           <div key={it.id} className={`lk-i${cur === it.id ? " on" : ""}`} onClick={() => set(cur === it.id ? "" : it.id)}>
             <span className={`evi ${it.c ?? (tab === "bk" ? "blue" : "acc")} xs`}>
