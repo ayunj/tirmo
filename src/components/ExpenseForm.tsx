@@ -216,7 +216,6 @@ export default function ExpenseForm({ trip, days, me, members, pockets, expenses
               </div>
             </>
           )}
-          {shared && <div className="teamnote">공동 예산에서 빠져요 · 정산 없음</div>}
 
           <label className="flab">카테고리</label>
           <div className="catg six">
