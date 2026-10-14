@@ -110,3 +110,7 @@ body,input,textarea,select,button{font-family:var(--display)}
 /* 일정: 머리와 날짜 탭 사이 회색 틈 없애고 한 덩어리로 */
 #plan .hd.p3-hd{margin-bottom:0!important;padding-bottom:10px}
 #plan .p3-tabs{padding-top:2px;margin-bottom:0}
+/* 일정: 날짜 줄 위아래 여백 */
+#plan .pad > .p3-day{margin-top:28px!important}
+#plan .pad > .p3-day:first-child{margin-top:20px!important}
+#plan .p3-dh{margin-bottom:12px}
