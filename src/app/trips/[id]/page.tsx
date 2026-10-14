@@ -78,7 +78,6 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               </Go>
             </span>
           </div>
-          </div>
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="hm3-chips">
