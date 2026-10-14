@@ -4,11 +4,10 @@ import { CURRENCIES } from "@/lib/places";
 import { evEmoji, MOVE_EMOJI } from "@/lib/cats";
 import { splitMove } from "@/lib/move";
 import FxCalc from "@/components/FxCalc";
-import { coverDate, cv } from "@/lib/cover";
+import { cv } from "@/lib/cover";
 import { money, pocketUse, sym, visibleMoney } from "@/lib/money";
 import Go from "@/components/Go";
 import Ic from "@/components/Ic";
-import { CvFlags } from "@/components/TripFlags";
 import { Ticket } from "@/components/BookingCards";
 import type { Booking, EventRow, Expense, Pocket } from "@/lib/types";
 
@@ -49,7 +48,6 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   const dd = dday(trip.start_date, trip.end_date);
   const status = dd === "여행 중" || dd === "D-DAY" ? `✈️ 여행 ${dayNo || 1}일째` : dd === "다녀옴" ? "🧳 다녀왔어요" : dd ? `✈️ ${dd}` : "✈️ 여행 준비";
   const together = ["", "혼자", "둘이서", "셋이서", "넷이서", "다섯이서"][members.length] ?? `${members.length}명`;
-  const flagEmoji = trip.kind === "domestic" ? "" : (trip.countries ?? []).slice(0, 3).map((c) => c.toUpperCase().replace(/./g, (ch) => String.fromCodePoint(127397 + ch.charCodeAt(0)))).join("");
   const nd = (x: string) => `${+x.split("-")[1]}월 ${+x.split("-")[2]}일`;
   const tripNights = trip.start_date && trip.end_date ? Math.round((parseDate(trip.end_date).getTime() - parseDate(trip.start_date).getTime()) / 864e5) : 0;
   const dateLine = trip.start_date ? `${nd(trip.start_date)}${trip.end_date && trip.end_date !== trip.start_date ? ` – ${trip.end_date.slice(5, 7) === trip.start_date.slice(5, 7) ? `${+trip.end_date.split("-")[2]}일` : nd(trip.end_date)}` : ""}${tripNights > 0 ? `, ${tripNights}박 ${tripNights + 1}일` : ""}` : "날짜 미정";
@@ -80,15 +78,6 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               </Go>
             </span>
           </div>
-          <div className="cc" style={{ paddingBottom: 30 }}>
-            <div className="cc-e">
-              <Ic n="plane" />
-            </div>
-            <div className="disp cc-t">{trip.title}</div>
-            <div className="cc-d cc-row">
-              <span>{coverDate(trip.start_date, trip.end_date)}</span>
-              <CvFlags trip={trip} />
-            </div>
           </div>
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
@@ -100,7 +89,8 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
           </div>
           <h1 className="hm3-t">{trip.title}</h1>
           <div className="hm3-d">
-            {flagEmoji && <span aria-hidden="true">{flagEmoji} </span>}
+            {trip.kind !== "domestic" &&
+              (trip.countries ?? []).slice(0, 3).map((c) => <span key={c} className={`fi fi-${c} hm3-flag`} aria-hidden="true" />)}
             {dateLine}
           </div>
 

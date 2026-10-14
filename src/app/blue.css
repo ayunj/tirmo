@@ -97,3 +97,4 @@ body,input,textarea,select,button{font-family:var(--display)}
 #home .tk-r::before,#home .tk-r::after{background:#fff;border:1px solid #E6E8EE}
 #home .tk-r::before{top:-9px}#home .tk-r::after{bottom:-9px}
 #home .ticket{overflow:visible}#home .tk-r{position:relative}
+.hm3-flag{width:20px;height:15px;border-radius:3px;margin-right:6px;vertical-align:-2px;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
