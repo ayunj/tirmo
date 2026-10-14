@@ -1,6 +1,9 @@
 import { loadTrip } from "@/lib/trip";
-import { byEv, dday, days, md, normTime, range, today } from "@/lib/format";
-import { catColor } from "@/lib/places";
+import { byEv, dday, days, md, normTime, nowTime, parseTime, range, today } from "@/lib/format";
+import { CURRENCIES } from "@/lib/places";
+import { evEmoji, MOVE_EMOJI } from "@/lib/cats";
+import { splitMove } from "@/lib/move";
+import FxCalc from "@/components/FxCalc";
 import { coverDate, cv } from "@/lib/cover";
 import { money, pocketUse, sym, visibleMoney } from "@/lib/money";
 import Go from "@/components/Go";
@@ -15,7 +18,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   const [ev, bk, wi, pk, po, ex, en] = await Promise.all([
     supabase.from("events").select("*").eq("trip_id", id).order("sort"),
     supabase.from("bookings").select("*").eq("trip_id", id).order("sort_key", { nullsFirst: false }),
-    supabase.from("wishes").select("*").eq("trip_id", id).eq("kind", "place"),
+    supabase.from("wishes").select("*").eq("trip_id", id),
     supabase.from("pack_items").select("done").eq("trip_id", id).or(`assignee.eq.${user.id},assignee.is.null`),
     supabase.from("pockets").select("*").eq("trip_id", id),
     supabase.from("expenses").select("*").eq("trip_id", id),
@@ -29,12 +32,22 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   const now = today();
   const showDay = ds.includes(now) ? now : ds[0];
   const dayNo = showDay ? ds.indexOf(showDay) + 1 : 0;
-  const preview = events.filter((e) => e.day === showDay).sort(byEv).slice(0, 4);
-  const flight = bookings.filter((b) => b.kind === "flight").find((b) => !b.details?.date || b.details.date >= now) ?? bookings.find((b) => b.kind === "flight");
+  // 지금 일정: 지난 1개(흐리게) · 지금 · 다음 3개
+  const dayList = events.filter((e) => e.day === showDay).sort(byEv);
+  const nowMin = parseTime(nowTime()) ?? 0;
+  let nowIdx = -1;
+  if (showDay === now) dayList.forEach((e, i) => { const t = parseTime(e.time_text); if (t != null && t <= nowMin) nowIdx = i; });
+  const from = Math.max(0, nowIdx - 1);
+  const preview = dayList.slice(from, nowIdx >= 0 ? nowIdx + 4 : 4).map((e) => ({ e, i: dayList.indexOf(e) }));
+  const flights = bookings.filter((b) => b.kind === "flight").sort((a, b) => (a.details?.date ?? "").localeCompare(b.details?.date ?? "") || (a.details?.from_time ?? "").localeCompare(b.details?.from_time ?? ""));
+  const legOf = (b: Booking) => (b.details?.date ? (b.details.date === trip.start_date ? "가는 편" : b.details.date === trip.end_date ? "오는 편" : "") : "");
+  const wishVis = (wi.data ?? []).filter((w) => w.created_by === user.id || w.shared !== false);
+  const shopAll = wishVis.filter((w) => w.kind === "shop" && w.status !== "no");
+  const shopGot = shopAll.filter((w) => w.status === "buy" || w.status === "done").length;
+  const placeN = wishVis.filter((w) => w.kind !== "shop").length;
+  const cur = CURRENCIES[trip.currency];
   const hotel = bookings.find((b) => b.kind === "hotel");
   const waits = bookings.filter((b) => b.status === "예약 오픈 대기");
-  const leg = flight?.details?.date ? (flight.details.date === trip.start_date ? "가는 편" : flight.details.date === trip.end_date ? "오는 편" : "") : "";
-  const packPct = packs.length ? Math.round((packs.filter((p) => p.done).length / packs.length) * 100) : 0;
   const main = pockets.filter((p) => p.currency === trip.currency);
   const left = main.reduce((s, p) => s + pocketUse(p, expenses).left, 0);
   const names = members.map((m) => ({ nickname: m.profiles?.nickname || "?", color: m.profiles?.color || "#8B95A1" }));
@@ -86,23 +99,6 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
                 초대하기 <Ic n="chevron-right" />
               </span>
             </Go>
-            <div className="mini3">
-              <Go href={`/trips/${id}/plan`}>
-                <Ic n="calendar-days" />
-                <b>{events.length}개</b>
-                <span>일정</span>
-              </Go>
-              <Go href={`/trips/${id}/bookings`}>
-                <Ic n="ticket" />
-                <b>{bookings.length}개</b>
-                <span>예약</span>
-              </Go>
-              <Go href={`/trips/${id}/wish`}>
-                <Ic n="heart" />
-                <b>{(wi.data ?? []).filter((w) => w.created_by === user.id || w.shared !== false).length}곳</b>
-                <span>가고싶은곳</span>
-              </Go>
-            </div>
           </div>
 
           <div className="sech">
@@ -111,7 +107,9 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               {bookings.length ? `전체 ${bookings.length}` : "추가"} <Ic n="chevron-right" />
             </Go>
           </div>
-          {flight && <Ticket b={flight} tid={id} leg={leg} />}
+          {flights.map((f) => (
+            <Ticket key={f.id} b={f} tid={id} leg={legOf(f)} />
+          ))}
           {hotel && <BookingRow b={hotel} tid={id} />}
           {waits.map((b) => (
             <Go key={b.id} className="alert" href={`/trips/${id}/bookings/${b.id}`}>
@@ -125,58 +123,96 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               <Ic n="chevron-right" />
             </Go>
           ))}
-          {!flight && !hotel && waits.length === 0 && (
+          {!flights.length && !hotel && waits.length === 0 && (
             <Go className="addline" href={`/trips/${id}/bookings/new`}>
               <Ic n="plus" /> 항공권 · 숙소 예약 넣기
             </Go>
           )}
 
           <div className="sech">
-            <b>{dayNo ? `DAY ${dayNo} 미리보기` : "일정 미리보기"}</b>
+            <b>{nowIdx >= 0 ? "지금 일정" : dayNo ? `DAY ${dayNo} 일정` : "일정"}</b>
             <Go as="span" href={`/trips/${id}/plan${showDay ? `?day=${showDay}` : ""}`}>
-              일정 <Ic n="chevron-right" />
+              전체 일정 <Ic n="chevron-right" />
             </Go>
           </div>
           {preview.length ? (
-            <Go className="dprev" href={`/trips/${id}/plan${showDay ? `?day=${showDay}` : ""}`}>
-              {preview.map((e) => (
-                <div key={e.id}>
-                  <span className="t">{normTime(e.time_text) || "·"}</span>
-                  <span className="d" style={{ background: catColor(e.category) }} />
-                  <b>{e.title}</b>
-                </div>
-              ))}
-            </Go>
+            <div className="nc3-list">
+              {preview.map(({ e, i }) => {
+                const nx = dayList[i + 1];
+                const mv = nx?.move_mode ? `${MOVE_EMOJI[nx.move_mode] ?? ""} ${splitMove(nx.move_note).dur}`.trim() : "";
+                const t = normTime(e.time_text);
+                return (
+                  <Go key={e.id} className={`nc3${i === nowIdx ? " now" : i < nowIdx ? " past" : ""}`} href={`/trips/${id}/plan/${e.id}`}>
+                    <span className={`nc3-t num${t ? "" : " none"}`}>{t || "–"}</span>
+                    <span className="nc3-e" aria-hidden="true">
+                      {evEmoji(e)}
+                    </span>
+                    <div className="mid">
+                      <div className="nc3-k">
+                        {e.category}
+                        {i === nowIdx ? " · 지금" : ""}
+                      </div>
+                      <b>{e.title}</b>
+                    </div>
+                    {i >= nowIdx && mv && <small>{mv}</small>}
+                  </Go>
+                );
+              })}
+            </div>
           ) : (
             <Go className="addline" href={`/trips/${id}/plan/new${showDay ? `?day=${showDay}` : ""}`}>
               <Ic n="plus" /> {showDay ? `${md(showDay)} 일정 추가` : "일정 추가"}
             </Go>
           )}
 
+          {trip.currency !== "KRW" && cur && Number(trip.rate) > 0 && (
+            <>
+              <div className="sech">
+                <b>환전 계산</b>
+                <span className="sub" style={{ fontSize: 13 }}>
+                  {cur.sym.trim()}
+                  {trip.rate_unit.toLocaleString()} = ₩{Number(trip.rate).toLocaleString()}
+                </span>
+              </div>
+              <FxCalc sym={cur.sym.trim()} rate={Number(trip.rate)} unit={Number(trip.rate_unit) || 1} />
+            </>
+          )}
+
           <div className="sech">
             <b>한눈에 보기</b>
           </div>
-          <div className="tiles">
+          <div className="gl3">
             <Go href={`/trips/${id}/pack`}>
-              <div className="ring" style={{ "--p": packPct } as React.CSSProperties}>
-                {packPct}%
-              </div>
-              <b>준비물</b>
-              <span>{packs.length ? `${packs.filter((p) => p.done).length} / ${packs.length} 챙김` : "아직 없어요"}</span>
+              <span aria-hidden="true">🧳</span>
+              <b className="num">{packs.length ? `${packs.filter((p) => p.done).length} / ${packs.length}` : "0"}</b>
+              <i>준비물</i>
             </Go>
             <Go href={`/trips/${id}/money`}>
-              <div className="tl-ic amber">
-                <Ic n="wallet" />
-              </div>
-              <b>{main.length ? money(left, sym(trip.currency)) : `${expenses.length}건`}</b>
-              <span>{main.length ? "잔여 예산" : "총 지출"}</span>
+              <span aria-hidden="true">💰</span>
+              <b className="num">{main.length ? money(left, sym(trip.currency)) : `${expenses.length}건`}</b>
+              <i>{main.length ? "남은 예산" : "총 지출"}</i>
+            </Go>
+            <Go href={`/trips/${id}/wish?tab=shop`}>
+              <span aria-hidden="true">🛍️</span>
+              <b className="num">
+                {shopGot} / {shopAll.length}
+              </b>
+              <i>쇼핑</i>
+            </Go>
+            <Go href={`/trips/${id}/bookings`}>
+              <span aria-hidden="true">🎫</span>
+              <b className="num">{bookings.length}건</b>
+              <i>예약</i>
+            </Go>
+            <Go href={`/trips/${id}/wish`}>
+              <span aria-hidden="true">💗</span>
+              <b className="num">{placeN}곳</b>
+              <i>가고싶은곳</i>
             </Go>
             <Go href={`/trips/${id}/diary`}>
-              <div className="tl-ic violet">
-                <Ic n="notebook-pen" />
-              </div>
-              <b>{en.count ?? 0}개</b>
-              <span>여행 기록</span>
+              <span aria-hidden="true">📝</span>
+              <b className="num">{en.count ?? 0}개</b>
+              <i>여행 기록</i>
             </Go>
           </div>
         </div>
