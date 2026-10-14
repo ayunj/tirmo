@@ -104,3 +104,6 @@ body,input,textarea,select,button{font-family:var(--display)}
 .hm3-ov .hm3-t{margin:0;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.25)}
 .hm3-ov .hm3-d{margin:4px 0 0;color:rgba(255,255,255,.92)}
 .hm3-chips{margin:18px 0 4px}
+/* 칩이 커버에 딱 붙지 않게 (첫 줄 여백 0 규칙 덮기) */
+#home .pad > .hm3-chips{margin:18px 0 6px!important}
+.hm3-st,.hm3-mem{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 13px;font-size:13.5px;line-height:1}
