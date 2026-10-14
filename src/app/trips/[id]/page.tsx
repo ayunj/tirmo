@@ -1,5 +1,5 @@
 import { loadTrip } from "@/lib/trip";
-import { byEv, dday, days, md, normTime, nowTime, parseTime, range, today } from "@/lib/format";
+import { byEv, dday, days, md, normTime, nowTime, parseDate, parseTime, today } from "@/lib/format";
 import { CURRENCIES } from "@/lib/places";
 import { evEmoji, MOVE_EMOJI } from "@/lib/cats";
 import { splitMove } from "@/lib/move";
@@ -8,8 +8,8 @@ import { coverDate, cv } from "@/lib/cover";
 import { money, pocketUse, sym, visibleMoney } from "@/lib/money";
 import Go from "@/components/Go";
 import Ic from "@/components/Ic";
-import { CvFlags, Names } from "@/components/TripFlags";
-import { BookingRow, Ticket } from "@/components/BookingCards";
+import { CvFlags } from "@/components/TripFlags";
+import { Ticket } from "@/components/BookingCards";
 import type { Booking, EventRow, Expense, Pocket } from "@/lib/types";
 
 export default async function TripHome({ params }: { params: Promise<{ id: string }> }) {
@@ -46,11 +46,18 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
   const shopGot = shopAll.filter((w) => w.status === "buy" || w.status === "done").length;
   const placeN = wishVis.filter((w) => w.kind !== "shop").length;
   const cur = CURRENCIES[trip.currency];
+  const dd = dday(trip.start_date, trip.end_date);
+  const status = dd === "여행 중" || dd === "D-DAY" ? `✈️ 여행 ${dayNo || 1}일째` : dd === "다녀옴" ? "🧳 다녀왔어요" : dd ? `✈️ ${dd}` : "✈️ 여행 준비";
+  const together = ["", "혼자", "둘이서", "셋이서", "넷이서", "다섯이서"][members.length] ?? `${members.length}명`;
+  const flagEmoji = trip.kind === "domestic" ? "" : (trip.countries ?? []).slice(0, 3).map((c) => c.toUpperCase().replace(/./g, (ch) => String.fromCodePoint(127397 + ch.charCodeAt(0)))).join("");
+  const nd = (x: string) => `${+x.split("-")[1]}월 ${+x.split("-")[2]}일`;
+  const tripNights = trip.start_date && trip.end_date ? Math.round((parseDate(trip.end_date).getTime() - parseDate(trip.start_date).getTime()) / 864e5) : 0;
+  const dateLine = trip.start_date ? `${nd(trip.start_date)}${trip.end_date && trip.end_date !== trip.start_date ? ` – ${trip.end_date.slice(5, 7) === trip.start_date.slice(5, 7) ? `${+trip.end_date.split("-")[2]}일` : nd(trip.end_date)}` : ""}${tripNights > 0 ? `, ${tripNights}박 ${tripNights + 1}일` : ""}` : "날짜 미정";
   const hotel = bookings.find((b) => b.kind === "hotel");
+  const nightsN = hotel?.details?.checkin && hotel.details?.checkout ? Math.round((parseDate(hotel.details.checkout).getTime() - parseDate(hotel.details.checkin).getTime()) / 864e5) : 0;
   const waits = bookings.filter((b) => b.status === "예약 오픈 대기");
   const main = pockets.filter((p) => p.currency === trip.currency);
   const left = main.reduce((s, p) => s + pocketUse(p, expenses).left, 0);
-  const names = members.map((m) => ({ nickname: m.profiles?.nickname || "?", color: m.profiles?.color || "#8B95A1" }));
 
   return (
     <section className="screen on" id="home">
@@ -85,32 +92,32 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
           </div>
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
-          <div className="infocard">
-            <div className="row">
-              <div>
-                <div className="ic-t">{trip.title}</div>
-                <div className="sub">{range(trip.start_date, trip.end_date)}</div>
-              </div>
-              {trip.start_date && <span className="dday">{dday(trip.start_date, trip.end_date)}</span>}
-            </div>
-            <Go className="row" style={{ marginTop: 12 }} href={`/trips/${id}/invite`}>
-              <Names list={names} add />
-              <span className="sub">
-                초대하기 <Ic n="chevron-right" />
-              </span>
+          <div className="hm3-chips">
+            <span className="hm3-st">{status}</span>
+            <Go as="span" className="hm3-mem" href={`/trips/${id}/invite`}>
+              👭 {together}
             </Go>
+          </div>
+          <h1 className="hm3-t">{trip.title}</h1>
+          <div className="hm3-d">
+            {flagEmoji && <span aria-hidden="true">{flagEmoji} </span>}
+            {dateLine}
           </div>
 
-          <div className="sech">
-            <b>예약 내역</b>
-            <Go as="span" href={`/trips/${id}/bookings`}>
-              {bookings.length ? `전체 ${bookings.length}` : "추가"} <Ic n="chevron-right" />
-            </Go>
-          </div>
           {flights.map((f) => (
             <Ticket key={f.id} b={f} tid={id} leg={legOf(f)} />
           ))}
-          {hotel && <BookingRow b={hotel} tid={id} />}
+          {hotel && (
+            <Go className="hm3-hotel" href={`/trips/${id}/bookings/${hotel.id}`}>
+              <span aria-hidden="true">🏨</span>
+              <div className="mid">
+                <b>{hotel.title || hotel.details?.name || "숙소"}</b>
+                <div className="s">
+                  {[hotel.details?.checkin ? `체크인 ${+hotel.details.checkin.split("-")[1]}/${+hotel.details.checkin.split("-")[2]}${hotel.details?.checkin_time ? ` ${hotel.details.checkin_time}` : ""}` : "", nightsN > 0 ? `${nightsN}박` : ""].filter(Boolean).join(", ")}
+                </div>
+              </div>
+            </Go>
+          )}
           {waits.map((b) => (
             <Go key={b.id} className="alert" href={`/trips/${id}/bookings/${b.id}`}>
               <span className="al-ic">
@@ -130,7 +137,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
           )}
 
           <div className="sech">
-            <b>{nowIdx >= 0 ? "지금 일정" : dayNo ? `DAY ${dayNo} 일정` : "일정"}</b>
+            <b>⏰ {nowIdx >= 0 ? "지금 일정" : dayNo ? `DAY ${dayNo} 일정` : "일정"}</b>
             <Go as="span" href={`/trips/${id}/plan${showDay ? `?day=${showDay}` : ""}`}>
               전체 일정 <Ic n="chevron-right" />
             </Go>
@@ -168,7 +175,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
           {trip.currency !== "KRW" && cur && Number(trip.rate) > 0 && (
             <>
               <div className="sech">
-                <b>환전 계산</b>
+                <b>💴 환전 계산</b>
                 <span className="sub" style={{ fontSize: 13 }}>
                   {cur.sym.trim()}
                   {trip.rate_unit.toLocaleString()} = ₩{Number(trip.rate).toLocaleString()}
@@ -179,7 +186,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
           )}
 
           <div className="sech">
-            <b>한눈에 보기</b>
+            <b>👀 한눈에 보기</b>
           </div>
           <div className="gl3">
             <Go href={`/trips/${id}/pack`}>

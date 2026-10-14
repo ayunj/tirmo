@@ -83,3 +83,17 @@ body,input,textarea,select,button{font-family:var(--display)}
 .gl3 span{font-size:26px;line-height:1;margin-bottom:6px}
 .gl3 b{font-size:16px;font-weight:700;color:var(--ink)}
 .gl3 i{font-style:normal;font-size:12.5px;color:var(--p3-sub)}
+/* 홈 위쪽: 상태 · 함께 · 제목 · 날짜 (목업) */
+.hm3-chips{display:flex;gap:6px;margin-top:18px}
+.hm3-st{font-size:13.5px;font-weight:600;color:#fff;background:var(--brand);border-radius:999px;padding:5px 12px}
+.hm3-mem{font-size:13.5px;font-weight:600;color:#5E6068;background:#F3F3F5;border-radius:999px;padding:5px 12px;cursor:pointer}
+.hm3-t{margin:10px 2px 0;font-size:28px;font-weight:700;letter-spacing:-.9px;line-height:1.25;color:var(--ink)}
+.hm3-d{margin:4px 2px 14px;font-size:15px;color:#8A8C93}
+#home .ticket{border-radius:20px}
+.hm3-hotel{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 14px;background:#fff;border:1px solid #E6E8EE;border-radius:20px;cursor:pointer}
+.hm3-hotel > span{width:30px;text-align:center;font-size:22px;flex:none}
+.hm3-hotel b{display:block;font-size:15.5px;font-weight:600;color:var(--ink)}
+.hm3-hotel .s{font-size:13px;color:#8A8C93}
+#home .tk-r::before,#home .tk-r::after{background:#fff;border:1px solid #E6E8EE}
+#home .tk-r::before{top:-9px}#home .tk-r::after{bottom:-9px}
+#home .ticket{overflow:visible}#home .tk-r{position:relative}
