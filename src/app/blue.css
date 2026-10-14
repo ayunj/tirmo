@@ -107,3 +107,6 @@ body,input,textarea,select,button{font-family:var(--display)}
 /* 칩이 커버에 딱 붙지 않게 (첫 줄 여백 0 규칙 덮기) */
 #home .pad > .hm3-chips{margin:18px 0 6px!important}
 .hm3-st,.hm3-mem{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 13px;font-size:13.5px;line-height:1}
+/* 일정: 머리와 날짜 탭 사이 회색 틈 없애고 한 덩어리로 */
+#plan .hd.p3-hd{margin-bottom:0!important;padding-bottom:10px}
+#plan .p3-tabs{padding-top:2px;margin-bottom:0}
