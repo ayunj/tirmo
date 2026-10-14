@@ -26,7 +26,7 @@ export default function FxCalc({ sym, rate, unit }: { sym: string; rate: number;
       <div className="fx3-out">
         <div>
           <span>💵 현금</span>
-          <b className="num">{won(cash)}</b>
+          <b className="tnum">{won(cash)}</b>
         </div>
         <div>
           <span>
@@ -45,7 +45,7 @@ export default function FxCalc({ sym, rate, unit }: { sym: string; rate: number;
             />
             %
           </span>
-          <b className="num">{won(card)}</b>
+          <b className="tnum">{won(card)}</b>
         </div>
       </div>
     </div>

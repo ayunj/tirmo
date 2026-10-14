@@ -143,7 +143,7 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
                 const t = normTime(e.time_text);
                 return (
                   <Go key={e.id} className={`nc3${i === nowIdx ? " now" : i < nowIdx ? " past" : ""}`} href={`/trips/${id}/plan/${e.id}`}>
-                    <span className={`nc3-t num${t ? "" : " none"}`}>{t || "–"}</span>
+                    <span className={`nc3-t tnum${t ? "" : " none"}`}>{t || "–"}</span>
                     <span className="nc3-e" aria-hidden="true">
                       {evEmoji(e)}
                     </span>
@@ -184,34 +184,34 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
           <div className="gl3">
             <Go href={`/trips/${id}/pack`}>
               <span aria-hidden="true">🧳</span>
-              <b className="num">{packs.length ? `${packs.filter((p) => p.done).length} / ${packs.length}` : "0"}</b>
+              <b className="tnum">{packs.length ? `${packs.filter((p) => p.done).length} / ${packs.length}` : "0"}</b>
               <i>준비물</i>
             </Go>
             <Go href={`/trips/${id}/money`}>
               <span aria-hidden="true">💰</span>
-              <b className="num">{main.length ? money(left, sym(trip.currency)) : `${expenses.length}건`}</b>
+              <b className="tnum">{main.length ? money(left, sym(trip.currency)) : `${expenses.length}건`}</b>
               <i>{main.length ? "남은 예산" : "총 지출"}</i>
             </Go>
             <Go href={`/trips/${id}/wish?tab=shop`}>
               <span aria-hidden="true">🛍️</span>
-              <b className="num">
+              <b className="tnum">
                 {shopGot} / {shopAll.length}
               </b>
               <i>쇼핑</i>
             </Go>
             <Go href={`/trips/${id}/bookings`}>
               <span aria-hidden="true">🎫</span>
-              <b className="num">{bookings.length}건</b>
+              <b className="tnum">{bookings.length}건</b>
               <i>예약</i>
             </Go>
             <Go href={`/trips/${id}/wish`}>
               <span aria-hidden="true">💗</span>
-              <b className="num">{placeN}곳</b>
+              <b className="tnum">{placeN}곳</b>
               <i>가고싶은곳</i>
             </Go>
             <Go href={`/trips/${id}/diary`}>
               <span aria-hidden="true">📝</span>
-              <b className="num">{en.count ?? 0}개</b>
+              <b className="tnum">{en.count ?? 0}개</b>
               <i>여행 기록</i>
             </Go>
           </div>

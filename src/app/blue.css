@@ -5,7 +5,7 @@
   --p3-line:#E3E7EF;--p3-sub:#8A92A3;--p3-ink2:#5A6273;--p3-chip:#F1F3F7;
 }
 body,input,textarea,select,button{font-family:var(--display)}
-.num,.p3-t{font-variant-numeric:tabular-nums}
+.tnum,.p3-t{font-variant-numeric:tabular-nums}
 
 /* ===== 일정 (디자인 3 · 블루) ===== */
 #plan .p3-hd .ib.p3-add{background:var(--brand);color:#fff;border-radius:14px}
