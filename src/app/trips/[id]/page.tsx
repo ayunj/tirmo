@@ -78,6 +78,14 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               </Go>
             </span>
           </div>
+          <div className="hm3-ov">
+            <h1 className="hm3-t">{trip.title}</h1>
+            <div className="hm3-d">
+              {trip.kind !== "domestic" &&
+                (trip.countries ?? []).slice(0, 3).map((c) => <span key={c} className={`fi fi-${c} hm3-flag`} aria-hidden="true" />)}
+              {dateLine}
+            </div>
+          </div>
         </div>
         <div className="pad" style={{ paddingBottom: 24 }}>
           <div className="hm3-chips">
@@ -86,13 +94,6 @@ export default async function TripHome({ params }: { params: Promise<{ id: strin
               👭 {together}
             </Go>
           </div>
-          <h1 className="hm3-t">{trip.title}</h1>
-          <div className="hm3-d">
-            {trip.kind !== "domestic" &&
-              (trip.countries ?? []).slice(0, 3).map((c) => <span key={c} className={`fi fi-${c} hm3-flag`} aria-hidden="true" />)}
-            {dateLine}
-          </div>
-
           {flights.map((f) => (
             <Ticket key={f.id} b={f} tid={id} leg={legOf(f)} />
           ))}
